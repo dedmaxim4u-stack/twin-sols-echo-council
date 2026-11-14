@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171714">
+  <meta name="description" content="TWIN SOLS: ECHO COUNCIL — a 2D Mars mission trainer about engineering trade-offs and crew trust.">
+  <title>TWIN SOLS: ECHO COUNCIL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="paper-noise" aria-hidden="true"></div>
+
+  <main id="app">
+    <section id="start-screen" class="screen start-screen active" aria-labelledby="game-title">
+      <img class="start-art" src="assets/base-concept.png" alt="Four astronauts debating inside a cutaway Mars outpost">
+      <div class="start-vignette"></div>
+      <div class="start-content">
+        <p class="eyebrow">JUNIOR ASTRONAUT MISSION TRAINER</p>
+        <h1 id="game-title"><span>TWIN SOLS</span><small>ECHO COUNCIL</small></h1>
+        <p class="tagline">Every watt changes the mission. Every choice changes the crew.</p>
+        <div class="mission-stamp">
+          <span>10 SOL TRAINING MISSION</span>
+          <span>GALE CRATER • MARS</span>
+        </div>
+        <div class="start-actions">
+          <button id="start-button" class="button button-primary">BEGIN MISSION</button>
+          <button id="about-button" class="button button-ghost">HOW IT WORKS</button>
+        </div>
+        <p class="source-note">Uses archived NASA and partner-agency data for an educational training scenario.</p>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen game-screen" aria-label="Mission control game">
+      <header class="mission-header">
+        <div class="brand-lockup">
+          <span class="brand-mark">TS</span>
+          <div><b>TWIN SOLS</b><small>ECHO COUNCIL</small></div>
+        </div>
+        <div class="sol-block">
+          <span>MISSION DAY</span>
+          <strong id="sol-number">SOL 01</strong>
+        </div>
+        <div id="resource-strip" class="resource-strip" aria-label="Core resources"></div>
+        <div class="header-actions">
+          <button id="crew-button" class="icon-button" aria-label="Open crew overview">CREW</button>
+          <button id="data-button" class="icon-button" aria-label="Open NASA data sources">DATA</button>
+          <button id="sound-button" class="icon-button" aria-label="Toggle sound">SOUND ON</button>
+        </div>
+      </header>
+
+      <div class="game-layout">
+        <aside class="left-rail panel">
+          <div class="panel-heading">
+            <span>BASE SYSTEMS</span>
+            <b id="mission-score">SCIENCE 05</b>
+          </div>
+          <div id="module-grid" class="module-grid"></div>
+          <div class="echo-queue">
+            <div class="panel-heading"><span>ECHO QUEUE</span><b id="echo-count">0 PENDING</b></div>
+            <div id="echo-list" class="echo-list"><p>No delayed effects yet.</p></div>
+          </div>
+        </aside>
+
+        <section class="scene-column">
+          <div id="scene" class="scene">
+            <img src="assets/base-concept.png" alt="Interior of Echo Station on Mars" class="scene-bg">
+            <div class="scene-shade"></div>
+            <div class="scene-label">
+              <span id="scene-kicker">MORNING REPORT</span>
+              <strong id="scene-title">Echo Station wakes</strong>
+            </div>
+            <div id="crew-stage" class="crew-stage" aria-label="Crew members"></div>
+            <div id="alert-ribbon" class="alert-ribbon">ARCHIVED TRAINING DATA</div>
+          </div>
+
+          <div id="dialogue-panel" class="dialogue-panel panel">
+            <div class="dialogue-meta">
+              <span id="speaker-name">MISSION CONTROL</span>
+              <button id="source-button" class="source-pill">REAL DATA</button>
+            </div>
+            <p id="dialogue-text" class="dialogue-text" aria-live="polite"></p>
+            <div id="council-grid" class="council-grid"></div>
+            <div id="choice-grid" class="choice-grid"></div>
+          </div>
+        </section>
+
+        <aside class="right-rail panel">
+          <div class="panel-heading"><span>CREW STATUS</span><b id="talk-counter">1 TALK</b></div>
+          <div id="crew-cards" class="crew-cards"></div>
+          <div class="relationship-card">
+            <div class="panel-heading"><span>CREW CLIMATE</span><b id="crew-climate">STEADY</b></div>
+            <div id="relationship-lines" class="relationship-lines"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="ending-screen" class="screen ending-screen" aria-labelledby="ending-title">
+      <img src="assets/base-concept.png" alt="Echo Station on Mars" class="ending-bg">
+      <div class="ending-overlay"></div>
+      <div class="ending-content">
+        <p class="eyebrow">MISSION COMPLETE</p>
+        <h2 id="ending-title">THE FIRST TRUE HOME</h2>
+        <p id="ending-summary" class="ending-summary"></p>
+        <div id="ending-stats" class="ending-stats"></div>
+        <div class="ending-columns">
+          <div>
+            <h3>CREW EPILOGUES</h3>
+            <div id="epilogue-list" class="epilogue-list"></div>
+          </div>
+          <div>
+            <h3>CAUSE MAP</h3>
+            <div id="cause-map" class="cause-map"></div>
+          </div>
+        </div>
+        <div id="twin-timeline" class="twin-timeline"></div>
+        <div class="start-actions">
+          <button id="replay-button" class="button button-primary">RUN ANOTHER TIMELINE</button>
+          <button id="rewind-button" class="button button-ghost">REWIND FINAL SOL</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-card panel">
+      <button id="modal-close" class="modal-close" aria-label="Close">×</button>
+      <p class="eyebrow" id="modal-kicker">MISSION FILE</p>
+      <h2 id="modal-title">ABOUT THE TRAINER</h2>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="cutscene" class="cutscene" aria-live="assertive" hidden>
+    <div class="cutscene-scan"></div>
+    <div id="cutscene-image" class="cutscene-image"></div>
+    <div class="cutscene-copy">
+      <p id="cutscene-kicker" class="eyebrow">CONSEQUENCE</p>
+      <h2 id="cutscene-title"></h2>
+      <p id="cutscene-text"></p>
+      <div id="effect-chips" class="effect-chips"></div>
+      <button id="continue-button" class="button button-primary">CONTINUE</button>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
