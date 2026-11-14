@@ -75,14 +75,14 @@ window.GAME_DATA = (() => {
     },
     radlab: {
       label: "NASA OSDR RADLAB",
-      title: "Mars radiation measurements",
+      title: "Real spacecraft radiation measurements",
       url: "https://visualization.osdr.nasa.gov/radlab/gui/data-api/",
-      note: "MSL-RAD-Surface measurements provide an authentic baseline for the game's radiation lessons."
+      note: "Real absorbed dose-rate and dose-equivalent measurements from instruments such as those aboard the ISS are shown only as a scale comparison, never as a Mars reading."
     },
     osdr: {
       label: "NASA OSDR",
       title: "Space biology and health research",
-      url: "https://visualization.osdr.nasa.gov/biodata/api/",
+      url: "https://osdr.nasa.gov/osdr/data/search?term=sleep",
       note: "Curated research themes inform fatigue, health, plant, and crew-recovery consequences."
     },
     marstrek: {
@@ -96,6 +96,12 @@ window.GAME_DATA = (() => {
       title: "Food production on the Moon and in remote areas",
       url: "https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/",
       note: "The greenhouse trade-offs draw on educator resources about food production in isolated environments."
+    },
+    csaStem: {
+      label: "CANADIAN SPACE AGENCY",
+      title: "Space STEM and youth resources",
+      url: "https://www.asc-csa.gc.ca/eng/youth-educators/resources-stem-and-youth-organizations.asp",
+      note: "Plain-language science cards and educator prompts are designed for youth and classroom use."
     }
   };
 

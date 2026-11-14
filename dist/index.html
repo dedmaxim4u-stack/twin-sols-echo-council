@@ -3,77 +3,143 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111b28">
-  <meta name="description" content="Twin Sols: Echo Council — a child-friendly Mars visual novel about real mission trade-offs.">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Twin Sols: Echo Council — a NASA-grounded Mars visual novel for young mission planners.">
   <title>Twin Sols: Echo Council</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main id="app">
-    <section id="start-screen" class="screen start-screen active" aria-labelledby="game-title">
-      <img class="start-art" src="assets/vn/hub.png" alt="A welcoming command room on Mars">
+    <section id="start-screen" class="screen active start-screen">
+      <img src="assets/vn/hub.webp" class="full-bg" alt="Echo Station command hub on Mars">
       <div class="start-scrim"></div>
-      <div class="start-card">
-        <p class="eyebrow">A MARS VISUAL NOVEL • AGES 7–12</p>
-        <h1 id="game-title">TWIN SOLS <span>ECHO COUNCIL</span></h1>
-        <p class="tagline">Explore the outpost. Listen to your crew. Make every watt count.</p>
-        <div class="start-facts"><span>10 SOLS</span><span>30 BIG CHOICES</span><span>MANY ENDINGS</span></div>
-        <div class="start-actions">
+      <article class="start-card">
+        <p class="eyebrow">NASA-GROUNDED MARS VISUAL NOVEL • AGES 7–12</p>
+        <h1>TWIN SOLS <span>ECHO COUNCIL</span></h1>
+        <p class="tagline">Walk the station. Know your crew. Make every watt count.</p>
+        <div class="start-badges"><span>10 SOLS</span><span>REAL NASA DATA</span><span>9 ENDINGS</span></div>
+        <div class="button-row">
           <button id="start-button" class="button primary">Begin mission</button>
-          <button id="about-button" class="button secondary">How to play</button>
+          <button id="how-button" class="button secondary">How to play</button>
+          <button id="educator-button" class="button ghost">For educators</button>
         </div>
-        <p class="small-print">No account needed. NASA science sources are linked inside the game.</p>
-      </div>
+        <p class="fine-print">Browser-playable. No account required. Archived data is always labelled honestly.</p>
+      </article>
+    </section>
+
+    <section id="prologue-screen" class="screen prologue-screen" aria-label="Mission prologue">
+      <img src="assets/vn/cg/prologue-arrival.webp" class="full-bg" alt="Echo Station beneath a solar storm">
+      <div class="prologue-scrim"></div>
+      <article class="prologue-card">
+        <p id="prologue-kicker" class="eyebrow">MISSION RECORD • BEFORE SOL 01</p>
+        <h2 id="prologue-title">The station that must answer for itself</h2>
+        <p id="prologue-text"></p>
+        <div class="prologue-footer">
+          <span id="prologue-progress">1 / 4</span>
+          <button id="prologue-next" class="button primary">Continue</button>
+        </div>
+      </article>
     </section>
 
     <section id="game-screen" class="screen game-screen" aria-label="Echo Station visual novel">
-      <div id="location-stage" class="location-stage">
-        <img id="location-bg" class="location-bg" src="assets/vn/hub.png" alt="Current room in Echo Station">
-        <div class="stage-shade"></div>
-        <header class="hud">
-          <div class="mission-mark"><b>TS</b><span><strong id="sol-number">SOL 01</strong><small id="phase-label">MORNING</small></span></div>
-          <div id="resource-strip" class="resource-strip" aria-label="Mission resources"></div>
-          <div class="hud-actions">
-            <button id="map-button" class="hud-button" aria-label="Open station map">⌘ <span>MAP</span></button>
-            <button id="status-button" class="hud-button" aria-label="Open crew status">♡ <span>CREW</span></button>
-            <button id="data-button" class="hud-button" aria-label="Open NASA sources">◉ <span>DATA</span></button>
-            <button id="sound-button" class="hud-button" aria-label="Toggle sound">♪ <span>ON</span></button>
-          </div>
-        </header>
-        <div class="place-card"><span id="time-label">08:10</span><strong id="location-name">COMMAND HUB</strong><small id="location-subtitle">The crew gathers here to plan the day.</small></div>
-        <div id="character-layer" class="character-layer" aria-label="Characters in this room"></div>
-        <div id="room-actions" class="room-actions" aria-label="Room actions"></div>
-        <section id="dialogue-box" class="dialogue-box" aria-live="polite">
-          <div class="speaker-row"><span id="speaker-name">MISSION CONTROL</span><span id="action-counter" class="action-counter">2 FREE ACTIONS</span></div>
-          <p id="dialogue-text">Welcome to Echo Station.</p>
-          <div id="choice-grid" class="choice-grid"></div>
-          <div class="dialogue-footer"><button id="source-button" class="text-button">REAL NASA DATA ↗</button><span id="advance-hint">Choose an action or open the map</span></div>
-        </section>
+      <img id="location-bg" class="full-bg location-bg" src="assets/vn/cabin.webp" alt="Current Echo Station room">
+      <div class="stage-scrim"></div>
+      <header id="hud" class="hud">
+        <div class="mission-clock">
+          <b class="brand-dot">TS</b>
+          <span><strong id="sol-label">SOL 01</strong><small id="time-label">08:00 • MORNING</small></span>
+        </div>
+        <div id="resource-strip" class="resource-strip" aria-label="Core mission resources"></div>
+        <nav class="quick-menu" aria-label="Visual novel controls">
+          <button id="back-button" class="quick-button" title="Rollback (PageUp)">↶ <span>BACK</span></button>
+          <button id="history-button" class="quick-button" title="Dialogue history (L)">▤ <span>LOG</span></button>
+          <button id="status-button" class="quick-button">◇ <span>STATUS</span></button>
+          <button id="crew-button" class="quick-button">♡ <span>CREW</span></button>
+          <button id="data-button" class="quick-button">● <span>NASA</span></button>
+          <button id="settings-button" class="quick-button">⚙ <span>SETTINGS</span></button>
+        </nav>
+      </header>
+
+      <div class="place-label">
+        <small id="phase-label">MORNING REPORT</small>
+        <strong id="location-label">COMMANDER CABIN</strong>
       </div>
+
+      <div id="exit-layer" class="exit-layer" aria-label="Room exits"></div>
+      <div id="character-layer" class="character-layer" aria-label="Crew in this room"></div>
+      <div id="room-actions" class="room-actions" aria-label="Available activities"></div>
+      <div id="decision-layer" class="decision-layer" hidden></div>
+
+      <section id="dialogue-box" class="dialogue-box" aria-live="polite">
+        <div class="dialogue-top">
+          <span id="speaker-name">MISSION LOG</span>
+          <span id="slot-label">3 TIME BLOCKS LEFT</span>
+        </div>
+        <p id="dialogue-text">Welcome to Echo Station.</p>
+        <div class="dialogue-bottom">
+          <button id="source-button" class="source-button">WHY IS THIS REAL? ↗</button>
+          <button id="continue-hint" class="continue-hint">CLICK / SPACE TO CONTINUE <i>▸</i></button>
+        </div>
+      </section>
     </section>
 
-    <section id="ending-screen" class="screen ending-screen" aria-labelledby="ending-title">
-      <img src="assets/vn/hub.png" class="ending-bg" alt="Echo Station after the mission">
+    <section id="ending-screen" class="screen ending-screen">
+      <img id="ending-bg" class="full-bg" src="assets/vn/endings/held-together.webp" alt="Mission ending">
       <div class="ending-scrim"></div>
-      <div class="ending-card">
-        <p class="eyebrow">YOUR ECHO STATION ENDING</p><h2 id="ending-title">HELD TOGETHER</h2><p id="ending-summary"></p>
+      <article class="ending-card">
+        <p class="eyebrow">YOUR ECHO STATION ENDING</p>
+        <h2 id="ending-title">HELD TOGETHER</h2>
+        <p id="ending-summary"></p>
         <div id="ending-stats" class="ending-stats"></div>
-        <div class="ending-grid"><div><h3>What your choices changed</h3><div id="cause-map" class="cause-map"></div></div><div><h3>Where the crew goes next</h3><div id="epilogue-list" class="epilogue-list"></div></div></div>
-        <div class="start-actions"><button id="replay-button" class="button primary">Try another timeline</button><button id="rewind-button" class="button secondary">Rewind final sol</button></div>
-      </div>
+        <div class="ending-columns">
+          <section><h3>Cause map</h3><div id="cause-map"></div></section>
+          <section><h3>Mission science report</h3><div id="science-report"></div></section>
+        </div>
+        <div class="button-row">
+          <button id="replay-button" class="button primary">Try another timeline</button>
+          <button id="checkpoint-button" class="button secondary">Load Sol 10 morning</button>
+        </div>
+      </article>
     </section>
   </main>
 
-  <div id="map-overlay" class="overlay" hidden>
-    <div class="overlay-card map-card"><button class="overlay-close" data-close="map" aria-label="Close map">×</button><p class="eyebrow">ECHO STATION • SELECT A ROOM</p><h2>Where do you want to go?</h2><p class="overlay-help">Moving is free. Talking or working uses one action.</p><div id="map-grid" class="map-grid"></div><button id="council-button" class="button council-button">Go to evening council →</button></div>
-  </div>
-  <div id="modal" class="overlay" hidden role="dialog" aria-modal="true">
-    <div class="overlay-card info-card"><button class="overlay-close" data-close="modal" aria-label="Close">×</button><p class="eyebrow" id="modal-kicker">MISSION FILE</p><h2 id="modal-title">ABOUT</h2><div id="modal-body" class="modal-body"></div></div>
-  </div>
-  <div id="cutscene" class="cutscene" hidden>
-    <img id="cutscene-bg" class="cutscene-bg" src="assets/vn/hub.png" alt="Consequence scene"><div class="cutscene-scrim"></div><div id="cutscene-sprite" class="cutscene-sprite expression relieved"></div>
-    <div class="cutscene-card"><p id="cutscene-kicker" class="eyebrow">SOL 01 • CONSEQUENCE</p><h2 id="cutscene-title"></h2><p id="cutscene-text"></p><div id="effect-chips" class="effect-chips"></div><button id="continue-button" class="button primary">Continue to next sol</button></div>
-  </div>
-  <script src="data.js"></script><script src="game.js"></script>
+  <aside id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
+    <button id="drawer-close" class="drawer-close" aria-label="Close">×</button>
+    <p id="drawer-kicker" class="eyebrow">MISSION FILE</p>
+    <h2 id="drawer-title">STATUS</h2>
+    <div id="drawer-body" class="drawer-body"></div>
+  </aside>
+  <div id="drawer-shade" class="drawer-shade" hidden></div>
+
+  <section id="morning-report" class="morning-report" hidden>
+    <div class="report-card">
+      <p class="eyebrow">WAKE-UP BRIEFING</p>
+      <h2 id="report-title">Sol 01 begins</h2>
+      <div class="report-grid">
+        <article><span>YESTERDAY</span><p id="report-yesterday"></p></article>
+        <article><span>OVERNIGHT</span><p id="report-overnight"></p></article>
+        <article><span>TODAY</span><p id="report-today"></p></article>
+      </div>
+      <button id="report-continue" class="button primary">Start the day</button>
+    </div>
+  </section>
+
+  <section id="cutscene" class="cutscene" hidden>
+    <img id="cutscene-bg" class="full-bg" src="assets/vn/hub.webp" alt="Consequence scene">
+    <div class="cutscene-scrim"></div>
+    <article class="cutscene-card">
+      <p id="cutscene-kicker" class="eyebrow">CONSEQUENCE</p>
+      <h2 id="cutscene-title"></h2>
+      <p id="cutscene-text"></p>
+      <div id="effect-chips" class="effect-chips"></div>
+      <button id="cutscene-continue" class="button primary">Return to the station</button>
+    </article>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="tutorial-tip" class="tutorial-tip" hidden></div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>

@@ -1,254 +1,235 @@
 (() => {
   "use strict";
+
   const { crew: CREW, sources: SOURCES, events: EVENTS, endings: ENDINGS } = window.GAME_DATA;
   const $ = s => document.querySelector(s);
-  const clamp = (n, a = 0, b = 100) => Math.max(a, Math.min(b, n));
   const clone = v => JSON.parse(JSON.stringify(v));
-  const pairKey = (a, b) => [a, b].sort().join("-");
-  const average = values => values.reduce((a, b) => a + b, 0) / Math.max(values.length, 1);
+  const clamp = (n, a = 0, b = 100) => Math.max(a, Math.min(b, n));
+  const avg = a => a.reduce((s, n) => s + n, 0) / Math.max(a.length, 1);
+  const pair = (a, b) => [a, b].sort().join("-");
+  const esc = v => String(v ?? "").replace(/[&<>\"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const SAVE = "twin-sols-save-v3", OLD_SAVE = "twin-sols-save-v2", SETTINGS = "twin-sols-settings-v1";
+  const NASA_CACHE = "twin-sols-nasa-cache-v1", SOL_SAVES = "twin-sols-sol-checkpoints-v3";
+  const TIMES = ["08:00 • MORNING", "12:00 • MIDDAY", "16:00 • AFTERNOON"];
 
   const ROOMS = {
-    hub: { name: "COMMAND HUB", subtitle: "The crew gathers here to plan the day.", bg: "assets/vn/hub.png", icon: "⌂" },
-    greenhouse: { name: "GREENHOUSE", subtitle: "Food, oxygen, and patient work grow together.", bg: "assets/vn/greenhouse.png", icon: "♧", module: "greenhouse" },
-    engineering: { name: "LIFE SUPPORT BAY", subtitle: "Air recyclers, water filters, and the power bus.", bg: "assets/vn/engineering.png", icon: "⚡", module: "shelter" },
-    medbay: { name: "MEDBAY", subtitle: "Rest is a mission resource too.", bg: "assets/vn/medbay.png", icon: "+" },
-    comms: { name: "SCIENCE & COMMS", subtitle: "Earth answers late, so Echo must think ahead.", bg: "assets/vn/comms.png", icon: "◉", module: "comms" },
-    rover: { name: "ROVER BAY", subtitle: "Every trip spends power and radiation margin.", bg: "assets/vn/rover.png", icon: "◎", module: "rover" }
+    cabin: { name: "COMMANDER CABIN", subtitle: "Review consequences here, then end the sol yourself.", bg: "assets/vn/cabin.webp", exits: [["hub", 8, 45], ["dormitory", 86, 45]] },
+    dormitory: { name: "DORMITORY", subtitle: "Rest is a mission resource. Tired crews make expensive mistakes.", bg: "assets/vn/dormitory.webp", exits: [["cabin", 8, 45], ["lounge", 86, 45]] },
+    lounge: { name: "CREW LOUNGE", subtitle: "Small conversations can prevent large failures.", bg: "assets/vn/lounge.webp", exits: [["dormitory", 8, 45], ["hub", 86, 45]] },
+    hub: { name: "COMMAND HUB", subtitle: "The whole crew gathers here for Council.", bg: "assets/vn/hub.webp", exits: [["lounge", 5, 48], ["greenhouse", 87, 42], ["medbay", 20, 14], ["comms", 70, 14], ["observatory", 43, 4], ["engineering", 48, 65]] },
+    greenhouse: { name: "GREENHOUSE", subtitle: "Food, air, water, power, and morale meet under glass.", bg: "assets/vn/greenhouse.webp", module: "greenhouse", exits: [["hub", 8, 45]] },
+    medbay: { name: "MEDBAY", subtitle: "Health and fatigue decide whether a plan can be carried out.", bg: "assets/vn/medbay.webp", exits: [["hub", 86, 45]] },
+    comms: { name: "SCIENCE & COMMS", subtitle: "Earth answers late, so Echo must think ahead.", bg: "assets/vn/comms.webp", module: "comms", exits: [["hub", 8, 45]] },
+    observatory: { name: "OBSERVATORY", subtitle: "Real data becomes a safe training question here.", bg: "assets/vn/observatory.webp", exits: [["hub", 46, 64]] },
+    engineering: { name: "LIFE SUPPORT", subtitle: "Air, water, shielding, and electricity share machines.", bg: "assets/vn/engineering.webp", module: "shelter", exits: [["hub", 8, 45], ["rover", 86, 45]] },
+    rover: { name: "ROVER BAY", subtitle: "Every route spends battery, time, and radiation margin.", bg: "assets/vn/rover.webp", module: "rover", exits: [["engineering", 8, 45]] }
   };
-  const SHEETS = Object.fromEntries(Object.keys(CREW).map(id => [id, `assets/vn/${id}-sheet.png`]));
-  const schedules = {
-    jack: ["engineering", "rover", "engineering", "hub", "rover", "engineering", "hub", "engineering", "rover", "hub"],
-    maya: ["medbay", "hub", "medbay", "engineering", "medbay", "hub", "medbay", "engineering", "medbay", "hub"],
-    riley: ["greenhouse", "greenhouse", "hub", "greenhouse", "engineering", "greenhouse", "hub", "greenhouse", "rover", "hub"],
-    theo: ["comms", "comms", "rover", "comms", "hub", "comms", "comms", "hub", "comms", "hub"]
+  const SCHEDULES = {
+    jack: ["engineering", "rover", "lounge", "engineering", "hub", "cabin", "rover", "engineering"],
+    maya: ["hub", "lounge", "medbay", "medbay", "dormitory", "engineering", "medbay", "lounge"],
+    riley: ["greenhouse", "lounge", "observatory", "greenhouse", "hub", "dormitory", "greenhouse", "observatory"],
+    theo: ["comms", "observatory", "lounge", "comms", "hub", "rover", "comms", "observatory"]
+  };
+  const PROLOGUE = [
+    ["MARS • A FICTIONAL TRAINING RECORD", "Echo Station was built to answer for itself", "Near Gale Crater, four specialists keep a small outpost alive. A message to Earth takes minutes to arrive, and its reply comes after the moment to act has already passed."],
+    ["TEN SOLS BEFORE THE LONG RED NIGHT", "The station has enough—just not enough for everything", "Power can warm the greenhouse or strengthen the shelter. Air can support the crew or a risky experiment. Every useful choice spends something now or creates a debt for later."],
+    ["THE CREW IS PART OF THE SYSTEM", "Machines do not argue. People do.", "Jack protects hardware. Maya protects people. Riley protects living systems. Theo protects discovery. Fatigue and broken trust can turn a sound plan into a failed repair."],
+    ["TWIN SOLS • JUNIOR MISSION TRAINER", "You will command the branching mission twin", "A real NASA research record can raise the training risk, but it is never presented as a Mars forecast. Walk the station, listen, choose, and learn exactly what each success costs."]
+  ];
+  const ARCS = {
+    jack: ["I repaired cargo crawlers on Earth. Here, a bad call can stop the air.", "Riley thinks I ignore the greenhouse. I fear systems that fail slowly enough for us to argue about them.", "A station survives when people report a weakness before it becomes an alarm. I am trying to do the same."],
+    maya: ["Tired is not the same as brave. We measure both health and fatigue.", "Theo hears opportunity in every signal. I hear the hours he did not sleep. Neither of us is completely wrong.", "You cannot remove every risk. You can make sure people understand the risk they carry."],
+    riley: ["These plants are food, moisture, oxygen support, and a room that remembers Earth.", "Jack sees a power cable. I see tomorrow's crop. The station needs both views.", "A living system pays back slowly. Keeping it alive is a promise to a future you cannot see."],
+    theo: ["My first Earth reply arrived after I had solved the problem. That is communication delay.", "Maya calls it overwork. I call it a closing window. Both can be true.", "Science is not a trophy. It is a reason to take a measured risk—and a record of its cost."]
+  };
+  const ACTIVITIES = {
+    cabin: ["Hold a quiet hour", "1 block • Power +2 • Science −2 • crew rests", { resources: { power: 2, science: -2 }, crewAll: { fatigue: -5 } }, "The station dims its work lights. Rest and power improve, but one research window closes."],
+    dormitory: ["Schedule recovery time", "1 block • Power −1 • Health +2 • fatigue −6", { resources: { power: -1 }, crewAll: { fatigue: -6, health: 2 } }, "Rest costs time, but tomorrow's hands will be steadier."],
+    lounge: ["Run a crew check-in", "1 block • Science −2 • trust and climate rise", { resources: { science: -2 }, crewAll: { trust: 1, fatigue: 2 }, relationsAll: 4 }, "Work pauses while the crew names the problem without blaming a person."],
+    hub: ["Review the power budget", "1 block • Power −2 • Science +3", { resources: { power: -2, science: 3 } }, "Better knowledge costs console time and electricity."],
+    greenhouse: ["Tune the grow lights", "1 block • Power −4 • Greenhouse +7 • Air +2", { resources: { power: -4, air: 2 }, modules: { greenhouse: 7 }, crew: { riley: { fatigue: 5 } } }, "The crop and oxygen support improve while the battery falls."],
+    medbay: ["Run a fatigue check", "1 block • Power −2 • Science −1 • crew rests", { resources: { power: -2, science: -1 }, crewAll: { fatigue: -4 } }, "The scan catches small mistakes before they become injuries."],
+    comms: ["Prepare an Earth packet", "1 block • Power −3 • Science +5 • Theo tires", { resources: { power: -3, science: 5 }, modules: { comms: 2 }, crew: { theo: { fatigue: 6 } } }, "The mission gains value; Theo loses another quiet hour."],
+    observatory: ["Compare a RadLab record", "1 block • Power −3 • Science +4 • Rad +2", { resources: { power: -3, science: 4, radiation: 2 }, crew: { maya: { fatigue: 3 }, theo: { fatigue: 3 } } }, "A real ISS dose-rate record becomes a scale lesson—not a Mars reading."],
+    engineering: ["Service the recycler", "1 block • Power −3 • Air +5 • Shelter +3", { resources: { power: -3, air: 5 }, modules: { shelter: 3 }, crew: { jack: { fatigue: 6 } } }, "Preventive work spends energy and strength before an emergency."],
+    rover: ["Plan a Gale route", "1 block • Power −4 • Science +5 • Rover −2 • Rad −2", { resources: { power: -4, science: 5, radiation: -2 }, modules: { rover: -2 }, crew: { theo: { fatigue: 4 } } }, "Mars Trek terrain guides a shorter route. The rehearsal still has a cost."]
   };
 
-  const screens = { start: $("#start-screen"), game: $("#game-screen"), ending: $("#ending-screen") };
+  const screens = { start: $("#start-screen"), prologue: $("#prologue-screen"), game: $("#game-screen"), ending: $("#ending-screen") };
   const ui = {
-    start: $("#start-button"), about: $("#about-button"), sol: $("#sol-number"), phase: $("#phase-label"), resources: $("#resource-strip"),
-    bg: $("#location-bg"), stage: $("#location-stage"), place: $("#location-name"), subtitle: $("#location-subtitle"), time: $("#time-label"),
-    characters: $("#character-layer"), roomActions: $("#room-actions"), speaker: $("#speaker-name"), dialogue: $("#dialogue-text"), choices: $("#choice-grid"),
-    actions: $("#action-counter"), hint: $("#advance-hint"), mapButton: $("#map-button"), status: $("#status-button"), data: $("#data-button"), sound: $("#sound-button"), source: $("#source-button"),
-    map: $("#map-overlay"), mapGrid: $("#map-grid"), council: $("#council-button"), modal: $("#modal"), modalKicker: $("#modal-kicker"), modalTitle: $("#modal-title"), modalBody: $("#modal-body"),
-    cutscene: $("#cutscene"), cutBg: $("#cutscene-bg"), cutSprite: $("#cutscene-sprite"), cutKicker: $("#cutscene-kicker"), cutTitle: $("#cutscene-title"), cutText: $("#cutscene-text"), chips: $("#effect-chips"), continue: $("#continue-button"),
-    endingTitle: $("#ending-title"), endingSummary: $("#ending-summary"), endingStats: $("#ending-stats"), causeMap: $("#cause-map"), epilogues: $("#epilogue-list"), replay: $("#replay-button"), rewind: $("#rewind-button")
+    start: $("#start-button"), how: $("#how-button"), educator: $("#educator-button"), proK: $("#prologue-kicker"), proT: $("#prologue-title"), proText: $("#prologue-text"), proP: $("#prologue-progress"), proNext: $("#prologue-next"),
+    sol: $("#sol-label"), time: $("#time-label"), phase: $("#phase-label"), location: $("#location-label"), bg: $("#location-bg"), game: $("#game-screen"), resources: $("#resource-strip"), exits: $("#exit-layer"), characters: $("#character-layer"), activities: $("#room-actions"), decisions: $("#decision-layer"),
+    speaker: $("#speaker-name"), dialogue: $("#dialogue-text"), slot: $("#slot-label"), hint: $("#continue-hint"), source: $("#source-button"), back: $("#back-button"), history: $("#history-button"), status: $("#status-button"), crew: $("#crew-button"), data: $("#data-button"), settings: $("#settings-button"),
+    drawer: $("#drawer"), shade: $("#drawer-shade"), close: $("#drawer-close"), dK: $("#drawer-kicker"), dT: $("#drawer-title"), dB: $("#drawer-body"), morning: $("#morning-report"), rT: $("#report-title"), rY: $("#report-yesterday"), rO: $("#report-overnight"), rToday: $("#report-today"), rContinue: $("#report-continue"),
+    cut: $("#cutscene"), cutBg: $("#cutscene-bg"), cutK: $("#cutscene-kicker"), cutT: $("#cutscene-title"), cutText: $("#cutscene-text"), chips: $("#effect-chips"), cutContinue: $("#cutscene-continue"), toast: $("#toast"), tutorial: $("#tutorial-tip"),
+    endBg: $("#ending-bg"), endT: $("#ending-title"), endText: $("#ending-summary"), endStats: $("#ending-stats"), cause: $("#cause-map"), science: $("#science-report"), replay: $("#replay-button"), checkpoint: $("#checkpoint-button")
   };
 
-  const initialState = () => ({
-    sol: 1, phase: "explore", location: "hub", actionsLeft: 2, preparedSol: 0,
-    resources: { power: 78, air: 76, radiation: 70, science: 5 },
-    modules: { greenhouse: 68, comms: 66, shelter: 61, rover: 74 },
+  const initial = () => ({
+    version: 3, sol: 1, phase: "new", location: "cabin", slot: 0, preparedSol: 0, resolvedSol: 0,
+    resources: { power: 78, air: 76, radiation: 70, science: 5 }, modules: { greenhouse: 68, comms: 66, shelter: 61, rover: 74 },
     crew: Object.fromEntries(Object.keys(CREW).map(id => [id, { health: 100, fatigue: 12, trust: 50 }])),
-    relations: { [pairKey("jack", "riley")]: 48, [pairKey("maya", "theo")]: 55, [pairKey("jack", "maya")]: 58, [pairKey("jack", "theo")]: 51, [pairKey("maya", "riley")]: 62, [pairKey("riley", "theo")]: 57 },
-    flags: {}, scheduled: [], history: [], talkedToday: {}, workedToday: {}, moods: {}, notices: [], sound: true, finalSnapshot: null, resolvedSol: 0
+    relations: { [pair("jack", "riley")]: 48, [pair("maya", "theo")]: 55, [pair("jack", "maya")]: 58, [pair("jack", "theo")]: 51, [pair("maya", "riley")]: 62, [pair("riley", "theo")]: 57 },
+    flags: {}, scheduled: [], history: [], dialogueLog: [], talkedToday: {}, workedToday: {}, moods: {}, notices: [],
+    nasa: { mode: "loading", fetchedAt: null, level: 1, summary: "Loading NASA training record…", donki: {} },
+    tutorialStep: 0, tutorialSkipped: false, selectedChoice: null, finalSnapshot: null, lastLine: null
   });
-  let state = initialState();
-  let currentEvent = EVENTS[0];
-  let typingTimer = null;
-  let audioContext = null;
+  let state = initial(), settings = loadSettings(), undo = [], redo = [], prologue = 0, typing = null, fullLine = "", audio = null, toastTimer = null;
 
-  function switchScreen(name) { Object.entries(screens).forEach(([key, el]) => el.classList.toggle("active", key === name)); }
-  function save() { localStorage.setItem("twin-sols-save-v2", JSON.stringify(state)); }
-  function load() { try { const raw = localStorage.getItem("twin-sols-save-v2"); if (!raw) return false; const parsed = JSON.parse(raw); if (!parsed?.sol || parsed.sol > 10) return false; state = parsed; return true; } catch { return false; } }
-  function reset() { localStorage.removeItem("twin-sols-save-v2"); state = initialState(); }
-  function initAudio() { if (!audioContext) { const Ctx = window.AudioContext || window.webkitAudioContext; if (Ctx) audioContext = new Ctx(); } if (audioContext?.state === "suspended") audioContext.resume(); }
-  function blip(id = "theo") { if (!state.sound || !audioContext) return; const v = CREW[id]?.voice || CREW.theo.voice; const o = audioContext.createOscillator(); const g = audioContext.createGain(); o.type = v.wave; o.frequency.value = v.frequency + Math.random() * 18; g.gain.setValueAtTime(.025, audioContext.currentTime); g.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .035); o.connect(g).connect(audioContext.destination); o.start(); o.stop(audioContext.currentTime + .04); }
-  function typeLine(speaker, text, voice = null) { clearInterval(typingTimer); ui.speaker.textContent = speaker; ui.dialogue.textContent = ""; let i = 0; const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches; if (reduced) { ui.dialogue.textContent = text; return; } typingTimer = setInterval(() => { ui.dialogue.textContent += text[i++] || ""; if (i % 4 === 0 && voice) blip(voice); if (i >= text.length) clearInterval(typingTimer); }, 9); }
+  function switchScreen(name) { Object.entries(screens).forEach(([k, el]) => el.classList.toggle("active", k === name)); }
+  function loadSettings() { try { return { textSpeed: 12, voiceVolume: 1, uiHidden: false, ...(JSON.parse(localStorage.getItem(SETTINGS)) || {}) }; } catch { return { textSpeed: 12, voiceVolume: 1, uiHidden: false }; } }
+  function saveSettings() { localStorage.setItem(SETTINGS, JSON.stringify(settings)); }
+  function save() { localStorage.setItem(SAVE, JSON.stringify(state)); updateStart(); }
+  function updateStart() { ui.start.textContent = localStorage.getItem(SAVE) || localStorage.getItem(OLD_SAVE) ? "Continue mission" : "Begin mission"; }
+  function migrate(old) { const fresh = initial(); return { ...fresh, ...old, version: 3, location: ROOMS[old.location] ? old.location : "cabin", phase: old.phase === "council" ? "council" : "explore", slot: clamp(2 - (old.actionsLeft ?? 2), 0, 3), dialogueLog: old.dialogueLog || [], nasa: fresh.nasa, tutorialStep: 5, tutorialSkipped: true }; }
+  function load() {
+    try {
+      const now = JSON.parse(localStorage.getItem(SAVE));
+      if (now?.version === 3 && now.sol >= 1 && now.sol <= 10) { state = { ...initial(), ...now }; return true; }
+      const old = JSON.parse(localStorage.getItem(OLD_SAVE));
+      if (old?.sol >= 1 && old.sol <= 10) { state = migrate(old); save(); return true; }
+    } catch {}
+    return false;
+  }
+  function reset() { localStorage.removeItem(SAVE); localStorage.removeItem(OLD_SAVE); localStorage.removeItem(SOL_SAVES); state = initial(); undo = []; redo = []; prologue = 0; }
+  function snap(label) { const copy = clone(state); if (undo.at(-1) && JSON.stringify(undo.at(-1).state) === JSON.stringify(copy)) return; undo.push({ label, state: copy }); if (undo.length > 60) undo.shift(); redo = []; ui.back.disabled = !undo.length; }
+  function rollback() { if (!undo.length) return toast("No earlier checkpoint yet."); redo.push({ state: clone(state) }); const s = undo.pop(); state = s.state; closeDrawer(); ui.morning.hidden = true; ui.cut.hidden = true; render(); save(); toast(`Back: ${s.label}`); }
+  function forward() { if (!redo.length) return toast("No later checkpoint available."); undo.push({ label: "Before roll-forward", state: clone(state) }); state = redo.pop().state; render(); save(); toast("Moved forward one checkpoint."); }
+  function saveSol() { try { const all = JSON.parse(localStorage.getItem(SOL_SAVES) || "{}"); all[state.sol] = clone(state); localStorage.setItem(SOL_SAVES, JSON.stringify(all)); } catch {} }
+  function loadSol(n) { try { const all = JSON.parse(localStorage.getItem(SOL_SAVES) || "{}"); if (!all[n]) return false; snap(`Before loading Sol ${n}`); state = all[n]; switchScreen("game"); prepareMorning(true); return true; } catch { return false; } }
 
-  function crewRoom(id) { return schedules[id][(state.sol - 1) % schedules[id].length]; }
-  function crewHere(room = state.location) { return Object.keys(CREW).filter(id => crewRoom(id) === room); }
-  function moodFor(id) { const s = state.crew[id]; if (state.moods[id]) return state.moods[id]; if (s.health < 45 || s.fatigue > 68) return "worried"; if (s.trust < 30) return "angry"; if (s.trust > 70) return "relieved"; return "calm"; }
-  function climate() { return Math.round(average(Object.values(state.relations))); }
-  function avgTrust() { return average(Object.values(state.crew).map(c => c.trust)); }
-  function avgHealth() { return average(Object.values(state.crew).map(c => c.health)); }
-  function currentSource() { return SOURCES[currentEvent?.source] || SOURCES.osdr; }
+  function initAudio() { const C = window.AudioContext || window.webkitAudioContext; if (!audio && C) audio = new C(); if (audio?.state === "suspended") audio.resume(); }
+  function blip(id) { if (!audio || settings.voiceVolume <= 0 || !CREW[id]) return; const v = CREW[id].voice, o = audio.createOscillator(), g = audio.createGain(), boost = ["maya", "riley"].includes(id) ? 1.6 : 1; o.type = v.wave; o.frequency.value = v.frequency + Math.random() * 18; g.gain.setValueAtTime(.025 * boost * settings.voiceVolume, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .045); o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + .05); }
+  function typeLine(text, id) { clearInterval(typing); typing = null; fullLine = text; ui.dialogue.textContent = ""; let i = 0; if (settings.textSpeed <= 0 || matchMedia("(prefers-reduced-motion: reduce)").matches) return void (ui.dialogue.textContent = text); typing = setInterval(() => { ui.dialogue.textContent += text[i++] || ""; if (id && i % (CREW[id]?.voice.speed || 3) === 0) blip(id); if (i >= text.length) { clearInterval(typing); typing = null; } }, settings.textSpeed); }
+  function say(speaker, text, id = null, record = true) { if (!text) return; ui.speaker.textContent = speaker; typeLine(text, id); state.lastLine = { speaker, text, id }; const last = state.dialogueLog.at(-1); if (record && (!last || last.text !== text || last.speaker !== speaker)) { state.dialogueLog.push({ sol: state.sol, speaker, text }); if (state.dialogueLog.length > 120) state.dialogueLog.shift(); } }
+  function finishTyping() { if (!typing) return false; clearInterval(typing); typing = null; ui.dialogue.textContent = fullLine; return true; }
 
-  function prepareSol() {
-    currentEvent = EVENTS[state.sol - 1];
-    if (!currentEvent) return finishMission();
-    if (state.preparedSol !== state.sol) {
-      state.preparedSol = state.sol; state.phase = "explore"; state.location = "hub"; state.actionsLeft = 2; state.talkedToday = {}; state.workedToday = {}; state.moods = {}; state.notices = [];
-      applyDueEffects();
-      Object.values(state.crew).forEach(person => { person.fatigue = clamp(person.fatigue - 4); if (person.fatigue > 72) person.health = clamp(person.health - 2); });
-      if (state.sol === 10 && !state.finalSnapshot) state.finalSnapshot = clone(state);
+  const eventNow = () => EVENTS[state.sol - 1];
+  const sourceNow = () => SOURCES[eventNow()?.source] || SOURCES.osdr;
+  function speakerId(name) { name = String(name).toLowerCase(); return Object.keys(CREW).find(id => name.includes(id) || name.includes(CREW[id].short.toLowerCase())) || null; }
+  function crewRoom(id) { if (state.phase === "council") return "hub"; const list = SCHEDULES[id]; return list[((state.sol - 1) * 3 + Math.min(state.slot, 2)) % list.length]; }
+  function here(room = state.location) { return Object.keys(CREW).filter(id => crewRoom(id) === room); }
+  function climate() { return Math.round(avg(Object.values(state.relations))); }
+  function trust() { return avg(Object.values(state.crew).map(c => c.trust)); }
+  function health() { return avg(Object.values(state.crew).map(c => c.health)); }
+  function mood(id) { const p = state.crew[id]; if (state.moods[id]) return state.moods[id]; if (p.health < 45 || state.resources.radiation < 22) return "alarmed"; if (p.fatigue > 72) return "tired"; if (p.trust < 28) return "angry"; if (p.trust < 40) return "sad"; if (["council-ready", "council"].includes(state.phase)) return "determined"; if (p.trust > 72) return "relieved"; if (eventNow()?.source === "donki" || p.fatigue > 50) return "worried"; return "calm"; }
+  function tier(v) { return v >= 90 ? ["excellent", "EXCELLENT"] : v >= 70 ? ["stable", "STABLE"] : v >= 45 ? ["warning", "WARNING"] : v >= 20 ? ["danger", "DANGER"] : ["critical", "CRITICAL"]; }
+
+  function renderResources() { ui.resources.innerHTML = [["⚡", "POWER", state.resources.power], ["◉", "LIFE SUPPORT", state.resources.air], ["◇", "RAD SAFETY", state.resources.radiation]].map(([icon, label, value]) => { const [c, word] = tier(value); return `<button class="resource-pill ${c}" data-open-status="1"><b>${icon} ${label}</b><strong>${Math.round(value)}</strong><small>${word}</small></button>`; }).join(""); }
+  function renderExits() { if (["council", "consequence", "morning"].includes(state.phase)) return void (ui.exits.innerHTML = ""); ui.exits.innerHTML = ROOMS[state.location].exits.map(([to, x, y], i) => `<button class="exit-hotspot${state.sol === 1 && state.tutorialStep === 1 && i === 0 ? " guide" : ""}" data-room="${to}" style="--x:${x};--y:${y}"><b>GO TO ${ROOMS[to].name}</b><small>${here(to).map(id => CREW[id].short).join(" • ") || "OPEN"} • movement is free</small></button>`).join(""); }
+  function renderCrew() { if (["council", "consequence"].includes(state.phase)) return void (ui.characters.innerHTML = ""); ui.characters.innerHTML = here().map(id => { const m = mood(id), s = ["tired", "sad", "alarmed", "determined"].includes(m) ? 2 : 1; return `<button class="character${state.sol === 1 && state.tutorialStep === 2 ? " guide" : ""}" data-character="${id}"><span class="character-sprite sheet-${s} ${m}" style="background-image:url('assets/vn/${id}-sheet${s === 2 ? "-2" : ""}.webp')"></span><span class="character-tag">${CREW[id].short} • ${m.toUpperCase()}</span></button>`; }).join(""); }
+  function renderActivities() {
+    if (state.phase === "night") return void (ui.activities.innerHTML = state.location === "cabin" ? `<button class="activity" data-sleep="1"><b>SLEEP • END SOL ${String(state.sol).padStart(2, "0")}</b><small>Apply overnight costs, recovery, and delayed consequences.</small></button>` : `<button class="activity" disabled><b>RETURN TO YOUR CABIN</b><small>Review the decision, then choose Sleep.</small></button>`);
+    if (state.phase === "council-ready") return void (ui.activities.innerHTML = state.location === "hub" ? `<button class="activity" data-council="1"><b>BEGIN CREW COUNCIL</b><small>All 3 blocks are spent. Make today's mission decision.</small></button>` : `<button class="activity" disabled><b>CREW COUNCIL IS READY</b><small>Go to Command Hub. Movement is free.</small></button>`);
+    if (state.phase !== "explore") return void (ui.activities.innerHTML = ""); const a = ACTIVITIES[state.location]; ui.activities.innerHTML = `<button class="activity" data-activity="${state.location}"><b>${a[0]}</b><small>${a[1]}</small></button>`;
+  }
+  function phaseName() { return ({ morning: "WAKE-UP BRIEFING", explore: "FREE TIME", "council-ready": "COUNCIL READY", council: "CREW COUNCIL", consequence: "CONSEQUENCE", night: "NIGHT REVIEW" })[state.phase] || "MISSION RECORD"; }
+  function renderHint() { let t = "CLICK / SPACE TO CONTINUE"; if (state.phase === "explore") t = `${3 - state.slot} BLOCK${3 - state.slot === 1 ? "" : "S"} LEFT • CHOOSE A TALK OR TASK`; if (state.phase === "council-ready") t = "GO TO COMMAND HUB • BEGIN COUNCIL"; if (state.phase === "council") t = "CHOOSE A PLAN • EVERY PLAN HAS A COST"; if (state.phase === "night") t = "RETURN TO CABIN • SLEEP WHEN READY"; ui.hint.innerHTML = `${t} <i>▸</i>`; ui.hint.classList.toggle("attention", ["council-ready", "night"].includes(state.phase)); }
+  function tutorial() { const m = { 1: "Step 1: Use a glowing door. Moving is free.", 2: "Step 2: Click a crew member. Talking uses one block.", 3: "Step 3: Open STATUS to see causes and the next cost.", 4: "Step 4: Spend the remaining blocks. Then return to Command Hub.", 5: "Step 5: Council shows cost now and risk later.", 6: "Step 6: Return to Cabin and choose Sleep." }; const show = !state.tutorialSkipped && state.sol === 1 && state.phase !== "morning" && m[state.tutorialStep]; ui.tutorial.textContent = show || ""; ui.tutorial.hidden = !show; }
+  function render() { const r = ROOMS[state.location] || ROOMS.cabin; ui.bg.src = r.bg; ui.bg.alt = r.name; ui.sol.textContent = `SOL ${String(state.sol).padStart(2, "0")}`; ui.time.textContent = state.phase === "council" ? "20:00 • COUNCIL" : state.phase === "night" ? "22:00 • NIGHT" : TIMES[Math.min(state.slot, 2)]; ui.phase.textContent = phaseName(); ui.location.textContent = r.name; ui.slot.textContent = state.phase === "explore" ? `${3 - state.slot} TIME BLOCK${3 - state.slot === 1 ? "" : "S"} LEFT` : phaseName(); ui.back.disabled = !undo.length; renderResources(); renderExits(); renderCrew(); renderActivities(); renderHint(); if (state.phase === "council") renderChoices(); else if (!ui.decisions.dataset.talk) { ui.decisions.hidden = true; ui.decisions.innerHTML = ""; } ui.game.classList.toggle("ui-hidden", settings.uiHidden); tutorial(); }
+
+  function showPrologue() { switchScreen("prologue"); const p = PROLOGUE[prologue]; ui.proK.textContent = p[0]; ui.proT.textContent = p[1]; ui.proText.textContent = p[2]; ui.proP.textContent = `${prologue + 1} / ${PROLOGUE.length}`; ui.proNext.textContent = prologue === PROLOGUE.length - 1 ? "Enter Echo Station" : "Continue"; }
+  function nextPrologue() { initAudio(); if (prologue < PROLOGUE.length - 1) { prologue++; return showPrologue(); } state = initial(); switchScreen("game"); prepareMorning(); }
+  function saveMorning() { try { const all = JSON.parse(localStorage.getItem(SOL_SAVES) || "{}"); all[state.sol] = clone(state); localStorage.setItem(SOL_SAVES, JSON.stringify(all)); } catch {} }
+  function prepareMorning(force = false) {
+    if (!eventNow()) return finishMission();
+    if (state.preparedSol !== state.sol || force) {
+      state.phase = "morning"; state.location = "cabin"; state.slot = 0; state.talkedToday = {}; state.workedToday = {}; state.moods = {}; state.notices = [];
+      if (state.sol > 1) { state.resources.power = clamp(state.resources.power - 2); state.resources.air = clamp(state.resources.air - 2); Object.values(state.crew).forEach(p => { p.fatigue = clamp(p.fatigue - 6); if (p.fatigue > 74) p.health = clamp(p.health - 2); }); }
+      applyDue(); state.preparedSol = state.sol; if (state.sol === 10 && !state.finalSnapshot) state.finalSnapshot = clone(state); saveMorning(); snap(`Sol ${state.sol} morning`);
     }
-    renderScene(true); save();
+    render(); showMorning(); save();
   }
+  function showMorning() { const e = eventNow(), prev = [...state.history].reverse().find(x => x.type === "council"); ui.rT.textContent = `Sol ${String(state.sol).padStart(2, "0")} begins`; ui.rY.textContent = prev ? `${prev.title}. ${prev.cause}` : "You arrived to command a ten-sol training twin."; ui.rO.textContent = state.sol === 1 ? "No overnight costs yet. Power, air, and radiation safety begin as limited reserves." : `Habitat baseline used 2 Power and 2 Life Support. ${state.notices.length ? state.notices.join(" ") : "The crew recovered 6 fatigue."}`; ui.rToday.textContent = `${e.title}. ${e.text}${state.sol === 2 ? ` ${state.nasa.summary}` : ""}`; ui.morning.hidden = false; }
+  function continueMorning() { ui.morning.hidden = true; state.phase = "explore"; if (state.sol === 1 && !state.tutorialSkipped) state.tutorialStep = 1; render(); say(eventNow().speaker, eventNow().text, speakerId(eventNow().speaker)); save(); }
+  function travel(to) { if (!ROOMS[to] || to === state.location) return; state.location = to; ui.game.classList.add("transitioning"); setTimeout(() => ui.game.classList.remove("transitioning"), 430); if (state.tutorialStep === 1) state.tutorialStep = 2; render(); say("MISSION LOG", ROOMS[to].subtitle); save(); }
 
-  function renderScene(morning = false) {
-    currentEvent = EVENTS[state.sol - 1];
-    const room = ROOMS[state.location];
-    ui.sol.textContent = `SOL ${String(state.sol).padStart(2, "0")}`;
-    ui.phase.textContent = state.phase === "council" ? "EVENING COUNCIL" : "FREE TIME";
-    ui.time.textContent = state.phase === "council" ? "18:40" : state.actionsLeft === 2 ? "08:10" : state.actionsLeft === 1 ? "12:30" : "17:50";
-    ui.place.textContent = room.name; ui.subtitle.textContent = room.subtitle; ui.actions.textContent = state.phase === "council" ? "BIG DECISION" : `${state.actionsLeft} FREE ACTION${state.actionsLeft === 1 ? "" : "S"}`;
-    ui.actions.style.background = state.actionsLeft ? "#e8f1e7" : "#f3d6cf";
-    if (!ui.bg.src.endsWith(room.bg.replace("assets/", "/assets/"))) { ui.stage.classList.add("room-change"); setTimeout(() => { ui.bg.src = room.bg; ui.stage.classList.remove("room-change"); }, 120); }
-    renderResources(); renderCharacters(); renderRoomActions();
-    if (state.phase === "council") renderCouncil();
-    else if (morning) {
-      const echo = state.notices.length ? ` An earlier choice returns today: ${state.notices.join(" ")}` : "";
-      typeLine(currentEvent.speaker, `${currentEvent.text}${echo}`, speakerId(currentEvent.speaker));
-      ui.choices.innerHTML = ""; ui.hint.textContent = "Explore two rooms, then join the evening council";
+  function openTalk(id) { if (state.phase !== "explore") return toast("Talk during free time, before Council."); snap(`Before talking with ${CREW[id].name}`); const a = state.sol <= 3 ? 0 : state.sol <= 6 ? 1 : 2, context = eventNow().council?.[id] || CREW[id].talks.default; say(CREW[id].short, `${ARCS[id][a]} ${context}`, id); ui.decisions.dataset.talk = id; ui.decisions.hidden = false; ui.decisions.innerHTML = [["listen", "Listen without fixing it", "Trust +4 • fatigue −2"], ["risk", "Ask what could fail next", "Science +1 • trust +1 • fatigue +2"], ["help", "Offer practical help", "Power −2 • trust +3 • fatigue −5"]].map(([k, title, hint]) => `<button class="decision" data-talk-choice="${k}" data-character-id="${id}"><b>${title}</b><small class="now">NOW: ${hint} • costs 1 block</small><small class="later">LATER: less time remains for station work.</small></button>`).join(""); if (state.tutorialStep === 2) state.tutorialStep = 3; renderHint(); }
+  function resolveTalk(id, kind) { const effects = kind === "listen" ? { crew: { [id]: { trust: 4, fatigue: -2 } } } : kind === "risk" ? { resources: { science: 1 }, crew: { [id]: { trust: 1, fatigue: 2 } } } : { resources: { power: -2 }, crew: { [id]: { trust: 3, fatigue: -5 } } }; apply(effects); state.talkedToday[id] = true; state.history.push({ type: "social", sol: state.sol, title: `${kind === "listen" ? "Listened to" : kind === "risk" ? "Reviewed risk with" : "Helped"} ${CREW[id].name}`, cause: "One of three blocks went to crew readiness instead of station work." }); delete ui.decisions.dataset.talk; ui.decisions.hidden = true; ui.decisions.innerHTML = ""; advance(); say(CREW[id].short, kind === "listen" ? "Being heard does not repair a machine, but it can stop us breaking the wrong thing." : kind === "risk" ? "A risk named early is cheaper than an alarm named late." : "That helps. Your time and that power still came from somewhere else.", id); save(); }
+  function activity(room) { if (state.phase !== "explore" || room !== state.location) return; const a = ACTIVITIES[room]; snap(`Before ${a[0]}`); apply(a[2]); state.workedToday[room] = true; state.history.push({ type: "activity", sol: state.sol, title: a[0], cause: a[1] }); advance(); say("MISSION LOG", a[3]); save(); }
+  function advance() { state.slot++; if (state.slot >= 3) { state.slot = 3; state.phase = "council-ready"; if (state.tutorialStep <= 3) state.tutorialStep = 4; } render(); }
+  function beginCouncil() { if (state.phase !== "council-ready" || state.location !== "hub") return; snap(`Before Sol ${state.sol} Council`); state.phase = "council"; if (state.tutorialStep === 4) state.tutorialStep = 5; delete ui.decisions.dataset.talk; render(); say(eventNow().speaker, eventNow().text, speakerId(eventNow().speaker)); save(); }
+
+  function allowed(r) { if (!r) return true; if (r.kind === "module") return state.modules[r.key] >= r.min; if (r.kind === "crewHealth") return state.crew[r.key].health >= r.min; if (r.kind === "flag") return Boolean(state.flags[r.key]) === r.value; if (r.kind === "combined") return state.modules[r.module] >= r.min && climate() >= r.relationMin; return true; }
+  function effective(choice) { const e = clone(choice.effects || {}); if (state.sol === 2) { e.resources ||= {}; e.resources.radiation = (e.resources.radiation || 0) - state.nasa.level * 2; } return e; }
+  function delta(e, limit = 6) { const labels = { power: "Power", air: "Life support", radiation: "Rad safety", science: "Science", greenhouse: "Greenhouse", comms: "Comms", shelter: "Shelter", rover: "Rover" }, out = []; for (const group of ["resources", "modules"]) for (const [k, v] of Object.entries(e[group] || {})) out.push(`${labels[k] || k} ${v > 0 ? "+" : ""}${v}`); return out.slice(0, limit).join(" • ") || "Crew and story state change"; }
+  function renderChoices() { ui.decisions.hidden = false; ui.decisions.innerHTML = eventNow().choices.map((c, i) => { const ok = allowed(c.requirement), nasa = state.sol === 2 ? ` • NASA modifier: Rad safety −${state.nasa.level * 2}` : ""; return `<button class="decision" data-choice="${i}" ${ok ? "" : "disabled"}><b>${i + 1}. ${esc(c.title)}</b><small class="now">NOW: ${esc(delta(effective(c)))}${nasa}</small><small class="later">LATER: ${esc(ok ? c.hint : c.requirement.label)}</small></button>`; }).join(""); }
+  function choose(i) { const c = eventNow().choices[i]; if (!c || !allowed(c.requirement)) return; snap(`Before choosing ${c.title}`); const chips = apply(effective(c)); state.resolvedSol = state.sol; state.selectedChoice = i; state.history.push({ type: "council", sol: state.sol, title: c.title, cause: c.cause, source: eventNow().source }); state.phase = "consequence"; showCut(c, chips); save(); }
+  function showCut(c, chips) { const bySol = { 1: "greenhouse-oxygen.webp", 2: "radiation-shelter.webp", 3: state.relations[pair("jack", "riley")] >= 55 ? "crew-reconciliation.webp" : "crew-argument.webp", 4: "earth-message.webp", 6: "crew-reconciliation.webp", 7: "crew-argument.webp", 9: "rover-relay.webp", 10: state.flags.final_rover_relay ? "rover-relay.webp" : "radiation-shelter.webp" }; ui.cutBg.src = `assets/vn/cg/${bySol[state.sol] || (c.cutscene.image === "riley" ? "greenhouse-oxygen.webp" : "earth-message.webp")}`; ui.cutK.textContent = `SOL ${String(state.sol).padStart(2, "0")} • CONSEQUENCE`; ui.cutT.textContent = c.cutscene.title; ui.cutText.textContent = `${c.cutscene.text} ${c.cause}`; ui.chips.innerHTML = chips.map(x => `<span class="effect-chip ${x.positive ? "positive" : ""}">${esc(x.text)}</span>`).join(""); ui.cut.hidden = false; }
+  function continueCut() { ui.cut.hidden = true; state.phase = "night"; state.location = "hub"; if (state.tutorialStep === 5) state.tutorialStep = 6; render(); say("MISSION LOG", "The decision is made. Return to your Cabin, review the cost, and choose Sleep."); save(); }
+  function sleep() { if (state.phase !== "night" || state.location !== "cabin") return; snap(`Before sleeping after Sol ${state.sol}`); if (state.sol >= 10) return finishMission(); state.sol++; state.preparedSol = 0; state.phase = "morning"; prepareMorning(); }
+
+  function apply(e, options = {}) { const chips = [], chip = (label, v) => chips.push({ text: `${label} ${v > 0 ? "+" : ""}${v}`, positive: v > 0 }); for (const [k, v] of Object.entries(e.resources || {})) { state.resources[k] = clamp((state.resources[k] || 0) + v); chip(({ power: "Power", air: "Life support", radiation: "Rad safety", science: "Science" })[k] || k, v); } for (const [k, v] of Object.entries(e.modules || {})) { state.modules[k] = clamp((state.modules[k] || 0) + v); chip(k[0].toUpperCase() + k.slice(1), v); } for (const [id, changes] of Object.entries(e.crew || {})) for (const [k, v] of Object.entries(changes)) state.crew[id][k] = clamp(state.crew[id][k] + v); if (e.crewAll) for (const p of Object.values(state.crew)) for (const [k, v] of Object.entries(e.crewAll)) p[k] = clamp(p[k] + v); for (const [k, v] of Object.entries(e.relations || {})) state.relations[k] = clamp((state.relations[k] || 50) + v); if (e.relationsAll) for (const k of Object.keys(state.relations)) state.relations[k] = clamp(state.relations[k] + e.relationsAll); Object.assign(state.flags, e.flags || {}); if (options.schedule !== false) for (const item of e.schedule || []) state.scheduled.push({ ...clone(item), dueSol: state.sol + item.delay }); return chips; }
+  function applyDue() { const due = state.scheduled.filter(x => x.dueSol <= state.sol); state.scheduled = state.scheduled.filter(x => x.dueSol > state.sol); for (const x of due) { apply(x.effects || {}, { schedule: false }); state.notices.push(`${x.title}: ${x.text}`); state.history.push({ type: "delayed", sol: state.sol, title: x.title, cause: x.text }); } }
+
+  function drawer(kicker, title, html) { ui.dK.textContent = kicker; ui.dT.textContent = title; ui.dB.innerHTML = html; ui.drawer.hidden = false; ui.shade.hidden = false; }
+  function closeDrawer() { ui.drawer.hidden = true; ui.shade.hidden = true; }
+  function meter(label, value, note) { const [c, word] = tier(value); return `<article class="status-card"><header><b>${esc(label)}</b><span class="state-word ${c}">${word} • ${Math.round(value)}</span></header><div class="status-meter"><i style="width:${clamp(value)}%"></i></div><p>${esc(note)}</p></article>`; }
+  function openStatus() { if (state.sol === 1 && state.tutorialStep === 3) state.tutorialStep = 4; const next = "Next overnight baseline: −2 Power, −2 Life Support; crew recovers 6 fatigue."; drawer("MISSION STATUS", "What changed—and why", [meter("Power", state.resources.power, next), meter("Life support", state.resources.air, "Greenhouse and recycler choices can change it later."), meter("Radiation safety", state.resources.radiation, "A safety margin, not a dose reading."), meter("Greenhouse", state.modules.greenhouse, "Food and plant support grounded in CSA learning resources."), meter("Communications", state.modules.comms, "Earth answers too late for urgent local choices."), meter("Shelter", state.modules.shelter, "Protection competes for power and work hours."), meter("Rover", state.modules.rover, "Mobility is paid for with power and exposure margin."), `<article class="status-card"><b>Science result: ${Math.round(state.resources.science)}</b><p>${next}</p></article>`].join("")); render(); }
+  function openCrew() { drawer("CREW FINDER", `Crew climate ${climate()} / 100`, `<p>Trust changes cooperation. Fatigue and health change whether technical plans are safe.</p>${Object.keys(CREW).map(id => { const p = state.crew[id], room = crewRoom(id); return `<article class="crew-card"><img src="${CREW[id].image}" alt="${CREW[id].name}"><div><header><b>${CREW[id].name}</b><span>${mood(id)}</span></header><p>${CREW[id].role}<br>Now in <b>${ROOMS[room].name}</b></p><div class="mini-row"><span>Health ${Math.round(p.health)}</span><span>Trust ${Math.round(p.trust)}</span><span>Energy ${Math.round(100 - p.fatigue)}</span></div></div><button class="button secondary" data-locate="${id}">Locate • free travel</button></article>`; }).join("")}`); }
+  function dataBadge() { return state.nasa.mode === "live" ? "LIVE NASA DATA" : state.nasa.mode === "cached" ? `CACHED NASA DATA • ${new Date(state.nasa.fetchedAt || Date.now()).toLocaleDateString()}` : state.nasa.mode === "loading" ? "LOADING NASA DATA" : "ARCHIVED NASA TRAINING RECORD"; }
+  function sourceMechanic(k) { return ({ donki: "A real flare, SEP, or CME record sets the Sol 2 training modifier—not a Mars forecast.", radlab: "Real dose-rate units teach scale; they are not presented as a Mars measurement.", osdr: "Sleep, fatigue, health, and plant research themes drive recovery and error risk.", marstrek: "Gale Crater terrain context changes rover battery and exposure trade-offs.", csa: "Food-production lessons connect plants to water, air, energy, nutrition, and morale." })[k] || "The source supports a real trade-off in plain language."; }
+  function openData() { const cards = Object.values(SOURCES).map(s => `<article class="data-card"><b>${esc(s.label)} • ${esc(s.title)}</b><p>${esc(s.note)}</p><a href="${s.url}" target="_blank" rel="noopener">Open official source ↗</a></article>`).join(""); const studies = state.nasa.osdrStudies?.length ? `<article class="data-card"><b>Selected OSDR records used by the mechanics</b>${state.nasa.osdrStudies.map(s => `<p><b>${esc(s.accession || "OSDR")}</b> — ${esc(s.title)}</p>`).join("")}</article>` : ""; drawer("MISSION SCIENCE LIBRARY", "Why this is real", `<span class="data-badge ${state.nasa.mode === "archived" ? "archived" : ""}">${esc(dataBadge())}</span><article class="data-card"><b>DONKI training seed</b><p>${esc(state.nasa.summary)}</p><p>This changes the Sol 2 radiation penalty. It is not an operational forecast.</p></article><article class="data-card"><b>RadLab comparison</b><p>${esc(state.nasa.radlabSummary || "Real ISS absorbed-dose-rate units are used as a scale comparison, never a Mars reading.")}</p></article>${studies}<article class="data-card"><b>Mars Trek site</b><p>Echo Station is fictional. Gale Crater context uses 5.4°S, 137.8°E.</p></article>${cards}`); }
+  function openSource() { const s = sourceNow(), fact = eventNow()?.dataFact ? `<p><b>Event note:</b> ${esc(eventNow().dataFact)}</p>` : ""; drawer(s.label, s.title, `<article class="data-card"><p>${esc(s.note)}</p>${fact}<p><b>In this mechanic:</b> ${esc(sourceMechanic(eventNow()?.source))}</p><a href="${s.url}" target="_blank" rel="noopener">Open official source ↗</a></article>`); }
+  function openHistory() { drawer("VISUAL NOVEL LOG", "Dialogue history", state.dialogueLog.length ? [...state.dialogueLog].reverse().map(x => `<article class="log-line"><small>SOL ${String(x.sol).padStart(2, "0")} • ${esc(x.speaker)}</small><p>${esc(x.text)}</p></article>`).join("") : "<p>No dialogue recorded yet.</p>"); }
+  function slotMeta(i) { try { const x = JSON.parse(localStorage.getItem(`${SAVE}-slot-${i}`)); return x?.savedAt ? `Sol ${x.state.sol} • ${new Date(x.savedAt).toLocaleString()}` : "Empty"; } catch { return "Empty"; } }
+  function openSettings() { const slots = [1, 2, 3].map(i => `<article class="setting-card"><b>Manual slot ${i}</b><p>${slotMeta(i)}</p><div class="button-row"><button class="button secondary" data-save-slot="${i}">Save</button><button class="button secondary" data-load-slot="${i}">Load</button></div></article>`).join(""); drawer("VN CONTROLS", "Settings & saves", `<article class="setting-card"><label><b>Text speed</b><span id="text-speed-value">${settings.textSpeed === 0 ? "Instant" : `${settings.textSpeed} ms`}</span></label><input id="text-speed" type="range" min="0" max="35" value="${settings.textSpeed}"></article><article class="setting-card"><label><b>Voice volume</b><span id="voice-volume-value">${Math.round(settings.voiceVolume * 100)}%</span></label><input id="voice-volume" type="range" min="0" max="150" value="${Math.round(settings.voiceVolume * 100)}"></article><article class="setting-card"><p><b>Keys:</b> Space/Enter • PageUp/Down • L Log • H Hide UI • 1–3 choice</p><button class="button secondary" data-hide-ui="1">${settings.uiHidden ? "Show" : "Hide"} interface</button><button class="button secondary" data-skip-tutorial="1">Skip tutorial</button></article>${slots}<article class="setting-card"><button class="button secondary" data-restart="1">Restart whole timeline</button></article>`); }
+  function openHow() { drawer("HOW TO PLAY", "Three blocks. One Council. No free choices.", `<article class="data-card"><b>1 • Walk</b><p>Click glowing doors. Movement, Status, Crew, and NASA Data are free.</p></article><article class="data-card"><b>2 • Spend time</b><p>Talking, working, studying, or resting uses one of three daily blocks.</p></article><article class="data-card"><b>3 • Decide</b><p>After three blocks return to Command Hub. Council shows immediate price and future risk.</p></article><article class="data-card"><b>4 • Sleep</b><p>After the consequence return to Cabin. Sleep applies delayed effects and begins the next sol.</p></article>`); }
+  function openEducator() { drawer("FOR EDUCATORS", "A 20–35 minute mission trainer", `<article class="data-card"><b>Learning question</b><p>Ask: “What did you gain, and what did you spend now or later?”</p></article><article class="data-card"><b>Focused HUD</b><p>Only Power, Life Support, and Radiation Safety stay visible. Other systems appear when relevant.</p></article><article class="data-card"><b>Honest labels</b><p>LIVE, CACHED, and ARCHIVED are distinct. DONKI is training context; RadLab is an ISS comparison; Echo Station is fictional.</p></article><article class="data-card"><b>Replay</b><p>Nine endings turn failure into comparison rather than punishment.</p></article>`); }
+  function manualSave(i) { localStorage.setItem(`${SAVE}-slot-${i}`, JSON.stringify({ savedAt: new Date().toISOString(), state })); toast(`Saved to slot ${i}.`); openSettings(); }
+  function manualLoad(i) { try { const x = JSON.parse(localStorage.getItem(`${SAVE}-slot-${i}`)); if (!x?.state) return toast(`Slot ${i} is empty.`); snap(`Before loading slot ${i}`); state = x.state; closeDrawer(); switchScreen("game"); render(); if (state.phase === "morning") showMorning(); save(); toast(`Loaded slot ${i}.`); } catch { toast("That save could not be loaded."); } }
+  function locate(id) { const room = crewRoom(id); closeDrawer(); travel(room); toast(`${CREW[id].name} located in ${ROOMS[room].name}.`); }
+
+  function endingKey() { const low = Math.min(state.resources.power, state.resources.air, state.resources.radiation); if (state.flags.final_rover_relay && climate() >= 60 && trust() >= 60) return "trueHome"; if (state.flags.final_rover_relay && state.resources.science >= 60) return "pathfinder"; if (state.flags.final_legacy && state.modules.greenhouse >= 70) return "greenDawn"; if (state.flags.final_legacy && state.resources.science >= 75 && low < 20) return "scienceAtAnyCost"; if (state.flags.final_legacy) return "lastMessage"; if (state.flags.final_shelter && (climate() < 50 || trust() < 45)) return "brokenCouncil"; if (state.flags.final_shelter && state.modules.comms < 30) return "silentStation"; if (state.flags.final_shelter && low < 8) return "redNomads"; return "heldTogether"; }
+  function finishMission() { saveSol(); const key = endingKey(), e = ENDINGS[key], file = ({ trueHome: "true-home", greenDawn: "green-dawn", pathfinder: "pathfinder", scienceAtAnyCost: "science-at-any-cost", silentStation: "silent-station", brokenCouncil: "broken-council", redNomads: "red-nomads", lastMessage: "last-message", heldTogether: "held-together" })[key]; ui.endBg.src = `assets/vn/endings/${file}.webp`; ui.endT.textContent = e.title; ui.endText.textContent = e.summary; ui.endStats.innerHTML = [[state.resources.power, "POWER"], [state.resources.air, "LIFE SUPPORT"], [state.resources.radiation, "RAD SAFETY"], [state.resources.science, "SCIENCE"], [health(), "CREW HEALTH"], [trust(), "TRUST"], [climate(), "CREW CLIMATE"], [state.modules.greenhouse, "GREENHOUSE"]].map(([v, l]) => `<div class="ending-stat"><b>${Math.round(v)}</b><span>${l}</span></div>`).join(""); ui.cause.innerHTML = state.history.filter(x => ["council", "delayed"].includes(x.type)).slice(-12).map(x => `<div class="cause-line"><b>Sol ${x.sol}: ${esc(x.title)}</b><br>${esc(x.cause)}</div>`).join(""); ui.science.innerHTML = [`${dataBadge()}: ${state.nasa.summary}`, "NASA DONKI changed the Sol 2 training modifier; it was not a Mars forecast.", "NASA OSDR informed fatigue, health, recovery, and plant consequences.", "NASA RadLab supplied real dose-rate units for an ISS comparison—not a Mars measurement.", "NASA Mars Trek grounded Gale Crater route and terrain trade-offs.", "CSA connected greenhouse food production to air, water, power, health, and morale."].map(t => `<div class="science-line">${esc(t)}</div>`).join(""); switchScreen("ending"); save(); }
+  function toast(text) { clearTimeout(toastTimer); ui.toast.textContent = text; ui.toast.hidden = false; toastTimer = setTimeout(() => ui.toast.hidden = true, 2600); }
+  function toggleUi() { settings.uiHidden = !settings.uiHidden; saveSettings(); render(); }
+
+  function nasaLevel(d) { const f = String(d.flare?.classType || "").toUpperCase(); return d.sep || f.startsWith("X") ? 3 : f.startsWith("M") || d.cme ? 2 : 1; }
+  function nasaSummary(d) { const p = []; if (d.flare) p.push(`${d.flare.classType || "Solar"} flare${d.flare.beginTime ? ` on ${new Date(d.flare.beginTime).toLocaleDateString()}` : ""}`); if (d.sep) p.push("a solar energetic particle record"); if (d.cme) p.push("a coronal mass ejection record"); return p.length ? `Training seed uses ${p.join(", ")}. Research context only—not a Mars forecast.` : "No recent event was returned, so a low-risk training seed is used."; }
+  function sanitize(flare, sep, cme) { const pick = (x, keys) => x ? Object.fromEntries(keys.filter(k => x[k] !== undefined).map(k => [k, x[k]])) : null; return { flare: pick(flare, ["flrID", "classType", "beginTime", "peakTime", "sourceLocation"]), sep: pick(sep, ["sepID", "eventTime", "instruments"]), cme: pick(cme, ["activityID", "startTime", "sourceLocation", "note"]) }; }
+  async function liveNASA() { const end = new Date(), start = new Date(end.getTime() - 30 * 86400000), date = x => x.toISOString().slice(0, 10), q = `startDate=${date(start)}&endDate=${date(end)}`, control = new AbortController(), timer = setTimeout(() => control.abort(), 9000); try { const result = await Promise.all(["FLR", "SEP", "CME"].map(t => fetch(`https://ccmc.gsfc.nasa.gov/DONKI-API/get/${t}?${q}`, { signal: control.signal, headers: { Accept: "application/json" } }).then(r => { if (!r.ok) throw new Error(`${t} ${r.status}`); return r.json(); }))); if (!result.every(Array.isArray)) throw new Error("Unexpected DONKI response"); const d = sanitize(result[0].at(-1), result[1].at(-1), result[2].at(-1)); return { mode: "live", fetchedAt: new Date().toISOString(), donki: d, level: nasaLevel(d), summary: nasaSummary(d) }; } finally { clearTimeout(timer); } }
+  async function loadNASA() {
+    let snapshot = null;
+    try { snapshot = await fetch("nasa-snapshot.json").then(r => r.json()); } catch {}
+    const context = snapshot ? {
+      radlabSummary: snapshot.radlab?.sample ? `${Number(snapshot.radlab.sample.absorbed_dose_rate).toFixed(2)} µGy/h recorded by ${snapshot.radlab.sample.instrument_id} aboard the ISS; comparison only.` : snapshot.radlab?.comparison,
+      osdrStudies: snapshot.osdr?.studies || []
+    } : {};
+    try {
+      const cached = JSON.parse(localStorage.getItem(NASA_CACHE) || "null");
+      if (cached?.fetchedAt && Date.now() - new Date(cached.fetchedAt).getTime() < 86400000) {
+        state.nasa = { ...cached, ...context, mode: "cached" };
+        render();
+      }
+    } catch {}
+    try {
+      const live = { ...(await liveNASA()), ...context };
+      state.nasa = live;
+      localStorage.setItem(NASA_CACHE, JSON.stringify(live));
+    } catch {
+      if (state.nasa.mode === "loading") {
+        if (snapshot) {
+          const d = snapshot.donki || {};
+          state.nasa = { mode: "archived", fetchedAt: snapshot.generatedAt, donki: d, level: nasaLevel(d), summary: nasaSummary(d), ...context };
+        } else {
+          const d = { flare: { classType: "M1.0", beginTime: "2026-09-05T15:04:00Z" } };
+          state.nasa = { mode: "archived", fetchedAt: "2026-09-05T15:04:00Z", donki: d, level: 2, summary: nasaSummary(d) };
+        }
+      }
     }
-    renderMap();
+    render();
+    if (state.phase !== "new") save();
   }
 
-  function renderResources() {
-    const items = [["power", "⚡", "POWER"], ["air", "◌", "LIFE SUPPORT"], ["radiation", "◇", "RAD SAFETY"]];
-    ui.resources.innerHTML = items.map(([key, icon, label]) => `<div class="resource ${state.resources[key] < 30 ? "low" : ""}" title="${label}: ${Math.round(state.resources[key])}%"><span class="resource-icon">${icon}</span><span><b>${label}</b><span class="resource-track"><i class="resource-fill" style="width:${state.resources[key]}%"></i></span></span><strong>${Math.round(state.resources[key])}</strong></div>`).join("");
-  }
+  ui.start.addEventListener("click", () => { initAudio(); if (load()) { switchScreen("game"); render(); if (state.phase === "morning") showMorning(); else if (state.phase === "consequence") state.phase = "night"; say(state.lastLine?.speaker || "MISSION LOG", state.lastLine?.text || "Welcome back to Echo Station.", state.lastLine?.id, false); return loadNASA(); } reset(); showPrologue(); loadNASA(); });
+  ui.proNext.addEventListener("click", nextPrologue); ui.how.addEventListener("click", openHow); ui.educator.addEventListener("click", openEducator); ui.rContinue.addEventListener("click", continueMorning); ui.cutContinue.addEventListener("click", continueCut); ui.back.addEventListener("click", rollback); ui.history.addEventListener("click", openHistory); ui.status.addEventListener("click", openStatus); ui.crew.addEventListener("click", openCrew); ui.data.addEventListener("click", openData); ui.settings.addEventListener("click", openSettings); ui.source.addEventListener("click", openSource); ui.close.addEventListener("click", closeDrawer); ui.shade.addEventListener("click", closeDrawer);
+  ui.hint.addEventListener("click", () => { if (finishTyping()) return; if (state.phase === "council-ready" && state.location !== "hub") travel("hub"); else if (state.phase === "night" && state.location !== "cabin") travel("cabin"); });
+  ui.replay.addEventListener("click", () => { reset(); showPrologue(); }); ui.checkpoint.addEventListener("click", () => { if (!loadSol(10)) toast("Sol 10 checkpoint is not available yet."); });
+  document.addEventListener("click", e => { const room = e.target.closest("[data-room]")?.dataset.room; if (room) travel(room); const character = e.target.closest("[data-character]")?.dataset.character; if (character) openTalk(character); const talk = e.target.closest("[data-talk-choice]"); if (talk) resolveTalk(talk.dataset.characterId, talk.dataset.talkChoice); const a = e.target.closest("[data-activity]")?.dataset.activity; if (a) activity(a); if (e.target.closest("[data-council]")) beginCouncil(); if (e.target.closest("[data-sleep]")) sleep(); const choice = e.target.closest("[data-choice]"); if (choice && !choice.disabled) choose(Number(choice.dataset.choice)); if (e.target.closest("[data-open-status]")) openStatus(); const loc = e.target.closest("[data-locate]")?.dataset.locate; if (loc) locate(loc); const ss = e.target.closest("[data-save-slot]")?.dataset.saveSlot; if (ss) manualSave(Number(ss)); const ls = e.target.closest("[data-load-slot]")?.dataset.loadSlot; if (ls) manualLoad(Number(ls)); if (e.target.closest("[data-hide-ui]")) { toggleUi(); closeDrawer(); } if (e.target.closest("[data-skip-tutorial]")) { state.tutorialSkipped = true; ui.tutorial.hidden = true; save(); closeDrawer(); } if (e.target.closest("[data-restart]")) { reset(); closeDrawer(); showPrologue(); } });
+  document.addEventListener("input", e => { if (e.target.id === "text-speed") { settings.textSpeed = Number(e.target.value); $("#text-speed-value").textContent = settings.textSpeed === 0 ? "Instant" : `${settings.textSpeed} ms`; saveSettings(); } if (e.target.id === "voice-volume") { settings.voiceVolume = Number(e.target.value) / 100; $("#voice-volume-value").textContent = `${e.target.value}%`; saveSettings(); initAudio(); blip("maya"); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); if (e.key.toLowerCase() === "l") openHistory(); if (e.key.toLowerCase() === "h") toggleUi(); if (e.key === "PageUp") { e.preventDefault(); rollback(); } if (e.key === "PageDown") { e.preventDefault(); forward(); } if ([" ", "Enter"].includes(e.key) && !ui.drawer.hidden) return; if ([" ", "Enter"].includes(e.key)) { e.preventDefault(); if (!ui.morning.hidden) continueMorning(); else if (!ui.cut.hidden) continueCut(); else ui.hint.click(); } if (state.phase === "council" && ["1", "2", "3"].includes(e.key)) choose(Number(e.key) - 1); });
+  document.addEventListener("wheel", e => { if (!ui.drawer.hidden || !ui.morning.hidden || !ui.cut.hidden) return; if (e.deltaY < -35) rollback(); if (e.deltaY > 35) forward(); }, { passive: true });
 
-  function renderCharacters() {
-    let ids = state.phase === "council" ? [speakerId(currentEvent.speaker)].filter(Boolean) : crewHere();
-    ui.characters.innerHTML = ids.length ? ids.map(id => `<button class="character" data-character="${id}" aria-label="Talk to ${CREW[id].name}"><span class="character-sprite expression ${moodFor(id)}" style="background-image:url('${SHEETS[id]}')"></span><span class="name-tag">${CREW[id].name} • ${moodFor(id).toUpperCase()}</span></button>`).join("") : "";
-    ui.characters.querySelectorAll("[data-character]").forEach(button => button.addEventListener("click", () => { if (state.phase === "explore") openTalk(button.dataset.character); }));
-  }
-
-  function renderRoomActions() {
-    if (state.phase !== "explore") { ui.roomActions.innerHTML = ""; return; }
-    const configs = {
-      greenhouse: ["Tend the oxygen crop", "Power −4 • Greenhouse +7 • Air +2", { resources: { power: -4, air: 2 }, modules: { greenhouse: 7 }, crew: { riley: { fatigue: 4 } } }],
-      engineering: ["Tune the air recycler", "Power −3 • Life Support +5 • Jack tires", { resources: { power: -3, air: 5 }, modules: { shelter: 5 }, crew: { jack: { fatigue: 5 } } }],
-      medbay: ["Schedule recovery time", "Power −2 • Most tired crewmate rests • Science −1", { resources: { power: -2, science: -1 } }],
-      comms: ["Decode a delayed packet", "Power −3 • Comms +5 • Science +2", { resources: { power: -3, science: 2 }, modules: { comms: 5 }, crew: { theo: { fatigue: 4 } } }],
-      rover: ["Charge and test the rover", "Power −5 • Rover +7 • Science +1", { resources: { power: -5, science: 1 }, modules: { rover: 7 }, crew: { jack: { fatigue: 3 } } }]
-    };
-    const item = configs[state.location];
-    if (!item) { ui.roomActions.innerHTML = ""; return; }
-    const used = state.workedToday[state.location] || state.actionsLeft <= 0;
-    ui.roomActions.innerHTML = `<button class="room-action" ${used ? "disabled" : ""}><b>${used ? "✓ Work completed" : item[0]}</b><small>${item[1]}</small></button>`;
-    ui.roomActions.querySelector("button")?.addEventListener("click", () => workRoom(item));
-  }
-
-  function workRoom(config) {
-    if (state.actionsLeft <= 0 || state.workedToday[state.location]) return;
-    const effects = clone(config[2]);
-    if (state.location === "medbay") { const id = Object.keys(state.crew).sort((a, b) => state.crew[b].fatigue - state.crew[a].fatigue)[0]; effects.crew = { [id]: { fatigue: -12, health: 4, trust: 2 } }; state.moods[id] = "relieved"; }
-    const chips = applyEffects(effects); state.workedToday[state.location] = true; consumeAction();
-    typeLine("STATION LOG", `${config[0]} complete. It helped one part of Echo Station, but ${costSentence(chips)}`, null);
-    state.history.push({ sol: state.sol, title: config[0], cause: `You used limited free time in the ${ROOMS[state.location].name}.` });
-    renderScene(); save();
-  }
-
-  function costSentence(chips) { const negative = chips.filter(c => !c.positive).map(c => c.text.toLowerCase()); return negative.length ? `${negative.join(" and ")} was the cost.` : "crew time was the cost."; }
-  function consumeAction() { state.actionsLeft = Math.max(0, state.actionsLeft - 1); if (state.actionsLeft === 0) ui.hint.textContent = "Free time is over — go to the evening council"; }
-
-  function openTalk(id) {
-    const person = CREW[id]; const stats = state.crew[id]; const already = state.talkedToday[id];
-    typeLine(person.short, stats.fatigue > 68 ? person.talks.tired : stats.trust < 32 ? person.talks.low : stats.trust > 70 ? person.talks.high : person.talks.default, id);
-    if (already || state.actionsLeft <= 0) { ui.choices.innerHTML = `<button class="choice" disabled><b>${already ? "You already spoke today" : "No free actions left"}</b><small>Return tomorrow, or go to council.</small></button>`; return; }
-    const councilLine = currentEvent.council[id];
-    ui.choices.innerHTML = `
-      <button class="choice" data-talk="listen"><b>Listen without interrupting</b><small>Trust +4 • Fatigue −3 • uses 1 action</small></button>
-      <button class="choice" data-talk="risk"><b>Ask about today's risk</b><small>Reveals their council advice • Trust +2 • uses 1 action</small></button>
-      <button class="choice" data-talk="push"><b>Ask for extra help</b><small>Improves this room • Fatigue +7 • Trust may fall • uses 1 action</small></button>`;
-    ui.choices.querySelectorAll("[data-talk]").forEach(b => b.addEventListener("click", () => resolveTalk(id, b.dataset.talk, councilLine)));
-  }
-
-  function resolveTalk(id, kind, councilLine) {
-    if (state.actionsLeft <= 0 || state.talkedToday[id]) return;
-    state.talkedToday[id] = true; let line; let effects;
-    if (kind === "listen") { effects = { crew: { [id]: { trust: 4, fatigue: -3 } } }; line = "Thanks for listening. It is easier to solve a hard problem when someone hears the whole thing."; state.moods[id] = "relieved"; }
-    else if (kind === "risk") { effects = { crew: { [id]: { trust: 2 } } }; line = councilLine || "The safest-looking choice still has a cost. Check what it changes tomorrow."; state.moods[id] = "calm"; }
-    else { const module = ROOMS[state.location].module; effects = { crew: { [id]: { fatigue: 7, trust: -2 } } }; if (module) effects.modules = { [module]: 6 }; else effects.resources = { science: 2 }; line = "I can do it, but tired hands make tomorrow's work harder. Please remember that."; state.moods[id] = "worried"; }
-    applyEffects(effects); consumeAction(); state.history.push({ sol: state.sol, title: `Talked with ${CREW[id].name}`, cause: kind === "push" ? "You gained extra work by spending crew energy and trust." : "You spent limited time listening before deciding." });
-    typeLine(CREW[id].short, line, id); ui.choices.innerHTML = ""; ui.actions.textContent = `${state.actionsLeft} FREE ACTION${state.actionsLeft === 1 ? "" : "S"}`; ui.time.textContent = state.actionsLeft === 1 ? "12:30" : "17:50"; renderResources(); renderCharacters(); renderRoomActions(); renderMap(); save();
-  }
-
-  function renderMap() {
-    ui.mapGrid.innerHTML = Object.entries(ROOMS).map(([id, room]) => { const people = crewHere(id).map(p => CREW[p].short).join(" • ") || "No crew here"; const system = room.module ? `${Math.round(state.modules[room.module])}% condition` : "Council room"; return `<button class="map-room ${state.location === id ? "current" : ""}" data-room="${id}" style="background-image:url('${room.bg}')"><b>${room.icon} ${room.name}</b><span>${people}</span><small>${system}</small></button>`; }).join("");
-    ui.mapGrid.querySelectorAll("[data-room]").forEach(b => b.addEventListener("click", () => travel(b.dataset.room)));
-    ui.council.textContent = state.actionsLeft ? `Go early: crew rests, science −${state.actionsLeft} →` : "Go to evening council →";
-  }
-  function travel(room) { if (state.phase !== "explore") return; state.location = room; ui.map.hidden = true; renderScene(); const ids = crewHere(); typeLine("MISSION LOG", ids.length ? `${ids.map(id => CREW[id].name).join(" and ")} ${ids.length > 1 ? "are" : "is"} here. Moving between rooms does not use an action.` : "The room is quiet. You can still work on its system."); save(); }
-
-  function showCouncil() {
-    if (state.phase !== "explore") return;
-    if (state.actionsLeft > 0) {
-      const unused = state.actionsLeft;
-      const crewRest = Object.fromEntries(Object.keys(CREW).map(id => [id, { fatigue: -2 * unused }]));
-      applyEffects({ resources: { science: -unused }, crew: crewRest });
-      state.history.push({ sol: state.sol, title: "Ended exploration early", cause: `The crew gained a little rest, but ${unused} unused action${unused === 1 ? "" : "s"} cost mission progress.` });
-      state.actionsLeft = 0;
-    }
-    state.phase = "council"; state.location = "hub"; ui.map.hidden = true; renderScene(); save();
-  }
-  function renderCouncil() {
-    typeLine(currentEvent.speaker, currentEvent.text, speakerId(currentEvent.speaker));
-    if (state.resolvedSol === state.sol) {
-      ui.choices.innerHTML = `<button class="choice" id="resume-after-choice"><b>The decision is already recorded</b><small>Continue without applying its effects twice.</small></button>`;
-      $("#resume-after-choice").addEventListener("click", continueAfterCutscene);
-      return;
-    }
-    ui.choices.innerHTML = currentEvent.choices.map((choice, i) => { const ok = requirementMet(choice.requirement); return `<button class="choice" data-decision="${i}" ${ok ? "" : "disabled"}><b>${i + 1}. ${choice.title}</b><small>${ok ? choice.hint : `LOCKED: ${choice.requirement.label}`}</small></button>`; }).join("");
-    ui.choices.querySelectorAll("[data-decision]").forEach(b => b.addEventListener("click", () => chooseDecision(Number(b.dataset.decision))));
-    ui.hint.textContent = "Every council choice has an immediate or delayed cost";
-  }
-
-  function speakerId(speaker) { const upper = String(speaker).toUpperCase(); return Object.keys(CREW).find(id => CREW[id].short === upper) || null; }
-  function requirementMet(req) { if (!req) return true; if (req.kind === "module") return state.modules[req.key] >= req.min; if (req.kind === "crewHealth") return state.crew[req.key].health >= req.min; if (req.kind === "flag") return !!state.flags[req.key] === (req.value ?? true); if (req.kind === "combined") return state.modules[req.module] >= req.min && climate() >= req.relationMin; return true; }
-
-  function applyEffects(effects = {}, options = { scheduleNested: true }) {
-    const chips = [];
-    const labels = { air: "LIFE SUPPORT", radiation: "RAD SAFETY" };
-    if (effects.resources) Object.entries(effects.resources).forEach(([key, d]) => { state.resources[key] = clamp((state.resources[key] ?? 0) + d); chips.push({ text: `${labels[key] || key.toUpperCase()} ${d > 0 ? "+" : ""}${d}`, positive: d > 0 }); });
-    if (effects.modules) Object.entries(effects.modules).forEach(([key, d]) => { state.modules[key] = clamp((state.modules[key] ?? 0) + d); chips.push({ text: `${key.toUpperCase()} ${d > 0 ? "+" : ""}${d}`, positive: d > 0 }); });
-    if (effects.crew) Object.entries(effects.crew).forEach(([id, changes]) => Object.entries(changes).forEach(([key, d]) => { state.crew[id][key] = clamp(state.crew[id][key] + d); if (Math.abs(d) >= 4) chips.push({ text: `${CREW[id].short} ${key.toUpperCase()} ${d > 0 ? "+" : ""}${d}`, positive: key === "fatigue" ? d < 0 : d > 0 }); }));
-    if (effects.relations) Object.entries(effects.relations).forEach(([key, d]) => { state.relations[key] = clamp((state.relations[key] ?? 50) + d); chips.push({ text: `CREW BOND ${d > 0 ? "+" : ""}${d}`, positive: d > 0 }); });
-    if (effects.flags) Object.assign(state.flags, effects.flags);
-    if (effects.schedule && options.scheduleNested !== false) { effects.schedule.forEach(item => state.scheduled.push({ ...clone(item), dueSol: state.sol + item.delay })); chips.push({ text: `${effects.schedule.length} FUTURE ECHO`, positive: false }); }
-    return chips;
-  }
-  function applyDueEffects() { const due = state.scheduled.filter(i => i.dueSol <= state.sol); state.scheduled = state.scheduled.filter(i => i.dueSol > state.sol); due.forEach(item => { applyEffects(item.effects, { scheduleNested: false }); state.notices.push(`${item.title}. ${item.text}`); state.history.push({ sol: state.sol, title: item.title, cause: item.text, delayed: true }); }); }
-
-  function chooseDecision(index) {
-    initAudio(); const choice = currentEvent.choices[index]; if (!choice || !requirementMet(choice.requirement)) return;
-    const snapshot = clone(state); const chips = applyEffects(choice.effects); state.resolvedSol = state.sol; state.history.push({ sol: state.sol, title: choice.title, cause: choice.cause, snapshot });
-    save(); showCutscene(choice, chips);
-  }
-  function showCutscene(choice, chips) {
-    const id = choice.cutscene.image; ui.cutBg.src = ROOMS[state.location]?.bg || ROOMS.hub.bg;
-    ui.cutSprite.style.backgroundImage = SHEETS[id] ? `url('${SHEETS[id]}')` : "none"; ui.cutSprite.className = `cutscene-sprite expression ${chips.some(c => !c.positive) ? "worried" : "relieved"}`;
-    ui.cutKicker.textContent = `SOL ${String(state.sol).padStart(2, "0")} • CONSEQUENCE`; ui.cutTitle.textContent = choice.cutscene.title; ui.cutText.textContent = choice.cutscene.text;
-    ui.chips.innerHTML = chips.slice(0, 9).map(c => `<span class="effect-chip ${c.positive ? "positive" : ""}">${c.text}</span>`).join("");
-    ui.continue.textContent = state.sol >= 10 ? "Reveal your ending" : "Continue to next sol"; ui.cutscene.hidden = false; blip(id);
-  }
-  function continueAfterCutscene() { ui.cutscene.hidden = true; if (state.sol >= 4 && (state.resources.air <= 0 || state.resources.radiation <= 0 || avgHealth() < 15)) return finishMission("redNomads"); if (state.sol >= 10) return finishMission(); state.sol += 1; prepareSol(); }
-
-  function endingKey() {
-    const c = climate(), trust = avgTrust(); const { power, air, radiation, science } = state.resources; const { greenhouse, comms, rover } = state.modules;
-    if (state.flags.final_rover_relay && rover >= 15 && c >= 38) return "pathfinder";
-    if (air < 20 || radiation < 18 || avgHealth() < 28) return science >= 55 && comms >= 20 ? "lastMessage" : "redNomads";
-    if (c < 30 || trust < 28 || (state.flags.crew_fight && c < 42)) return "brokenCouncil";
-    if (science >= 72 && (air < 48 || radiation < 45 || power < 25)) return "scienceAtAnyCost";
-    if (comms < 24 && air >= 35) return "silentStation";
-    if (greenhouse >= 68 && air >= 45 && state.flags.plants_saved_crew) return "greenDawn";
-    if (average([power, air, radiation]) >= 48 && c >= 50 && trust >= 45 && science >= 42) return "trueHome";
-    return "heldTogether";
-  }
-  function finishMission(forced = null) {
-    const ending = ENDINGS[forced || endingKey()]; switchScreen("ending"); ui.endingTitle.textContent = ending.title; ui.endingSummary.textContent = ending.summary;
-    ui.endingStats.innerHTML = [["POWER", state.resources.power], ["LIFE SUPPORT", state.resources.air], ["RAD SAFETY", state.resources.radiation], ["SCIENCE", state.resources.science]].map(([l, v]) => `<div class="ending-stat"><b>${Math.round(v)}</b><span>${l}</span></div>`).join("");
-    ui.causeMap.innerHTML = state.history.filter(x => !x.delayed).slice(-6).map(x => `<div class="cause-item"><b>Sol ${x.sol}: ${x.title}</b><br>${x.cause}</div>`).join("");
-    ui.epilogues.innerHTML = Object.keys(CREW).map(id => { const s = state.crew[id]; const fate = s.health < 30 ? "needs a long recovery" : s.fatigue > 78 ? "finally accepts a full rest cycle" : s.trust >= 72 ? "volunteers for your next mission" : s.trust < 28 ? "asks for a different commander" : "stays at Echo Station with new questions"; return `<div class="epilogue-item"><b>${CREW[id].name}</b> ${fate}.</div>`; }).join("");
-    localStorage.removeItem("twin-sols-save-v2");
-  }
-
-  function openModal(kicker, title, body) { ui.modalKicker.textContent = kicker; ui.modalTitle.textContent = title; ui.modalBody.innerHTML = body; ui.modal.hidden = false; }
-  function closeModal() { ui.modal.hidden = true; }
-  function openAbout() { openModal("HOW TO PLAY", "A day at Echo Station", `<ol><li><b>Morning:</b> read the real mission problem.</li><li><b>Explore:</b> open the map and visit rooms. You get two actions for a talk or system job.</li><li><b>Council:</b> choose one plan. Every plan spends something now or later.</li><li><b>Consequence:</b> see the cutscene, changed resources, trust, fatigue, and future options.</li></ol><p class="notice">There is no perfect button. The lesson is to understand the trade-off and try a different timeline.</p><p>Expected playtime: about 35–55 minutes for all 10 sols. A short replay to chase another ending takes about 15–25 minutes.</p>`); }
-  function openSources() { openModal("SCIENCE LIBRARY", "Real data behind the story", `<p>The story is fictional, but its constraints come from real space research. Static archived examples are never presented as a live forecast.</p><div class="source-list">${Object.values(SOURCES).map(s => `<div class="source-item"><b>${s.label}: ${s.title}</b><p>${s.note}</p><a href="${s.url}" target="_blank" rel="noopener">Open source ↗</a></div>`).join("")}</div>`); }
-  function openCurrentSource() { const s = currentSource(); openModal(s.label, s.title, `<p>${currentEvent.dataFact || s.note}</p><p>${s.note}</p><a href="${s.url}" target="_blank" rel="noopener">Open the original source ↗</a>`); }
-  function openCrew() { openModal("CREW STATUS", `Crew climate: ${climate()} / 100`, `<p>Trust changes how each person responds. Fatigue makes repairs risky. Relationships can unlock or remove future plans.</p><div class="crew-list">${Object.keys(CREW).map(id => { const p = CREW[id], s = state.crew[id]; return `<div class="crew-status"><img src="${p.image}" alt="${p.name}"><div><b>${p.name}</b><small>${p.role} • ${moodFor(id)}</small><div class="mini-bars">${[["HEALTH", s.health], ["TRUST", s.trust], ["ENERGY", 100 - s.fatigue]].map(([l,v]) => `<span class="mini-bar">${l}<i><span style="width:${v}%"></span></i><b>${Math.round(v)}</b></span>`).join("")}</div></div></div>`; }).join("")}</div>`); }
-
-  function startMission() { initAudio(); if (!load()) reset(); switchScreen("game"); prepareSol(); }
-  ui.start.addEventListener("click", startMission); ui.about.addEventListener("click", openAbout); ui.mapButton.addEventListener("click", () => { if (state.phase === "explore") { renderMap(); ui.map.hidden = false; } });
-  ui.status.addEventListener("click", openCrew); ui.data.addEventListener("click", openSources); ui.source.addEventListener("click", openCurrentSource); ui.council.addEventListener("click", showCouncil);
-  ui.sound.addEventListener("click", () => { initAudio(); state.sound = !state.sound; ui.sound.querySelector("span").textContent = state.sound ? "ON" : "OFF"; save(); });
-  ui.continue.addEventListener("click", continueAfterCutscene); ui.replay.addEventListener("click", () => { reset(); switchScreen("game"); prepareSol(); }); ui.rewind.addEventListener("click", () => { if (!state.finalSnapshot) return; state = clone(state.finalSnapshot); switchScreen("game"); prepareSol(); });
-  document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.dataset.close === "map" ? ui.map.hidden = true : closeModal()));
-  [ui.map, ui.modal].forEach(el => el.addEventListener("click", e => { if (e.target === el) el.hidden = true; }));
-  document.addEventListener("keydown", e => { if (e.key === "Escape") { ui.map.hidden = true; closeModal(); } if (!ui.cutscene.hidden && (e.key === "Enter" || e.key === " ")) continueAfterCutscene(); if (state.phase === "council" && ["1","2","3"].includes(e.key)) ui.choices.querySelector(`[data-decision="${Number(e.key)-1}"]:not(:disabled)`)?.click(); });
-  if (localStorage.getItem("twin-sols-save-v2")) ui.start.textContent = "Continue mission";
+  updateStart(); render(); loadNASA();
 })();

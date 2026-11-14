@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-11-14T14:00:22.893Z",
+  "mode": "archived-build-snapshot",
+  "donki": {
+    "flare": {
+      "flrID": "2026-11-11T21:06:00-FLR-001",
+      "catalog": "M2M_CATALOG",
+      "instruments": [
+        {
+          "displayName": "GOES-P: EXIS 1.0-8.0"
+        }
+      ],
+      "beginTime": "2026-11-11T21:06Z",
+      "peakTime": "2026-11-11T21:21Z",
+      "endTime": "2026-11-11T21:29Z",
+      "classType": "M1.7",
+      "sourceLocation": "S07W46",
+      "activeRegionNum": 14566,
+      "note": "",
+      "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/49504/-1",
+      "linkedEvents": null,
+      "sentNotifications": null,
+      "submissionTime": "2026-11-11T21:33Z",
+      "versionId": 1
+    },
+    "sep": null,
+    "cme": {
+      "activityID": "2026-11-13T21:24:00-CME-001",
+      "catalog": "M2M_CATALOG",
+      "startTime": "2026-11-13T21:24Z",
+      "instruments": [
+        {
+          "displayName": "SOHO: LASCO/C2"
+        },
+        {
+          "displayName": "SOHO: LASCO/C3"
+        },
+        {
+          "displayName": "STEREO A: SECCHI/COR2"
+        }
+      ],
+      "sourceLocation": "",
+      "activeRegionNum": null,
+      "note": "A very small CME seen to the SSW in SOHO LASCO C2 and to the SE in STEREO A COR2 coronagraphs, and in early timestamps of C3. The front is not clear in GOES CCOR-1. No source has been found for this CME.",
+      "cmeAnalyses": [
+        {
+          "isMostAccurate": true,
+          "levelOfData": 0,
+          "time21_5": "2026-11-14T04:11Z",
+          "latitude": -51,
+          "longitude": 22,
+          "halfAngle": 12,
+          "speed": 474,
+          "type": "S",
+          "featureCode": "LE",
+          "imageType": "running difference",
+          "measurementTechnique": "SWPC_CAT",
+          "note": "",
+          "minorHalfWidth": null,
+          "speedMeasuredAtHeight": 10,
+          "tilt": null,
+          "submissionTime": "2026-11-14T01:52Z",
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/CMEAnalysis/49548/-1",
+          "enlilList": []
+        }
+      ],
+      "linkedEvents": null,
+      "sentNotifications": null,
+      "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/CME/49547/-1",
+      "submissionTime": "2026-11-14T01:50Z",
+      "versionId": 1
+    },
+    "source": "https://ccmc.gsfc.nasa.gov/DONKI-API",
+    "note": "Research records seed a training scenario; they are not an operational Mars forecast."
+  },
+  "radlab": {
+    "measurement": "absorbed dose rate",
+    "unit": "microgray per hour",
+    "comparison": "RadLab records real instrument readings from spacecraft including the ISS. Echo Station uses them as a scale comparison, not a Mars measurement.",
+    "source": "NASA OSDR RadLab",
+    "sample": {
+      "timestamp": "2022-04-01T23:00:00",
+      "instrument_id": "DosTel2",
+      "absorbed_dose_rate": 10.2160856666667,
+      "instrument": "DosTel2",
+      "spacecraft": "ISS"
+    },
+    "sourceUrl": "https://visualization.osdr.nasa.gov/radlab/gui/data-api/"
+  },
+  "osdr": {
+    "topics": [
+      "sleep",
+      "fatigue",
+      "immune response",
+      "plant growth"
+    ],
+    "note": "OSDR research themes ground recovery, health, and greenhouse consequences without turning a single study into a medical prediction.",
+    "source": "NASA Open Science Data Repository",
+    "studies": [
+      {
+        "term": "plant stress",
+        "accession": "OSD-767",
+        "title": "Stress and light spectral quality influence the transcriptome of a tomato crop on the International Space Station"
+      },
+      {
+        "term": "space crops",
+        "accession": "OSD-655",
+        "title": "Pick-and-eat space crop production flight testing on the International Space Station (Elemental Analysis, ORAC, Phenolic Content)"
+      },
+      {
+        "term": "bone health",
+        "accession": "OSD-977",
+        "title": "Effects of spaceflight on cancellous and cortical bone in proximal femur in growing rats."
+      }
+    ],
+    "sourceUrl": "https://osdr.nasa.gov/osdr/data/search",
+    "supportingRecord": {
+      "id": "OS-566",
+      "title": "NASA Ames bed-rest studies including sleep and circadian rhythms",
+      "url": "https://osdr.nasa.gov/bio/repo/data/experiments/OS-566"
+    }
+  },
+  "marsTrek": {
+    "site": "Gale Crater",
+    "latitude": -5.4,
+    "longitude": 137.8,
+    "note": "Mars Trek imagery and terrain tools provide the real geographic context for Echo Station.",
+    "source": "NASA Mars Trek"
+  },
+  "csa": {
+    "topic": "Food production in space and remote areas",
+    "note": "The greenhouse links food, water, power, oxygen support, nutrition, and morale.",
+    "source": "Canadian Space Agency"
+  }
+}
