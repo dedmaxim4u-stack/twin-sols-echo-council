@@ -12,6 +12,7 @@
 
 - [Public 7-slide demonstration (PDF)](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Twin-Sols-Echo-Council-Pitch.pdf)
 - [Editable PowerPoint file](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Twin-Sols-Echo-Council-Pitch.pptx)
+- [Five-minute pitch script and two-minute Q&A](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Five-Minute-Pitch-and-QA.md)
 - [Ready-to-paste Space Apps submission text](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Submission-Text.md)
 
 ## Core loop
