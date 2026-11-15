@@ -6,7 +6,7 @@ window.GAME_DATA = (() => {
       role: "SYSTEMS ENGINEER",
       image: "assets/jack-mercer.png",
       color: "#e0a52b",
-      voice: { wave: "square", frequency: 128, speed: 3 },
+      voice: { wave: "square", frequency: 132, speed: 3, variation: 16, gain: 0.052, length: 0.055 },
       value: "Reliability",
       bio: "Jack trusts machines because they never hide what is broken. He respects honest plans, fair workloads, and repairs done before they become emergencies.",
       talks: {
@@ -22,7 +22,7 @@ window.GAME_DATA = (() => {
       role: "MEDICAL OFFICER",
       image: "assets/maya-brooks.png",
       color: "#c84d2b",
-      voice: { wave: "sine", frequency: 186, speed: 4 },
+      voice: { wave: "sine", frequency: 218, speed: 4, variation: 26, gain: 0.082, length: 0.062 },
       value: "Crew safety",
       bio: "Maya protects the crew from radiation, exhaustion, and each other. She values truth and will challenge plans that treat people like spare parts.",
       talks: {
@@ -38,7 +38,7 @@ window.GAME_DATA = (() => {
       role: "ASTROBIOLOGIST",
       image: "assets/riley-stone.png",
       color: "#6e9e54",
-      voice: { wave: "triangle", frequency: 235, speed: 3 },
+      voice: { wave: "triangle", frequency: 276, speed: 3, variation: 34, gain: 0.078, length: 0.058 },
       value: "Living systems",
       bio: "Riley runs the greenhouse. She sees every seedling as part of the base's life-support system, not decoration, and remembers every time it is treated as expendable.",
       talks: {
@@ -54,7 +54,7 @@ window.GAME_DATA = (() => {
       role: "SCIENCE & COMMS",
       image: "assets/theo-reed.png",
       color: "#4e92a0",
-      voice: { wave: "sawtooth", frequency: 275, speed: 2 },
+      voice: { wave: "sawtooth", frequency: 174, speed: 2, variation: 22, gain: 0.046, length: 0.045 },
       value: "Discovery",
       bio: "Theo listens to Earth through minutes of silence. He wants Echo Station to discover something worth the risk, but ambition and fatigue can make weak signals look certain.",
       talks: {

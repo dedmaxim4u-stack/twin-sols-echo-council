@@ -2,144 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a1220">
   <meta name="description" content="Twin Sols: Echo Council — a NASA-grounded Mars visual novel for young mission planners.">
   <title>Twin Sols: Echo Council</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main id="app">
-    <section id="start-screen" class="screen active start-screen">
-      <img src="assets/vn/hub.webp" class="full-bg" alt="Echo Station command hub on Mars">
-      <div class="start-scrim"></div>
+    <section id="start-screen" class="screen active start-screen" aria-label="Main menu">
+      <img src="assets/vn/v4/menu-emergency.webp" class="full-bg menu-bg" alt="Echo Station crew preparing during a solar-weather warning">
+      <div class="menu-dust" aria-hidden="true"></div><div class="menu-alert" aria-hidden="true"></div><div class="start-scrim"></div>
       <article class="start-card">
         <p class="eyebrow">NASA-GROUNDED MARS VISUAL NOVEL • AGES 7–12</p>
         <h1>TWIN SOLS <span>ECHO COUNCIL</span></h1>
-        <p class="tagline">Walk the station. Know your crew. Make every watt count.</p>
-        <div class="start-badges"><span>10 SOLS</span><span>REAL NASA DATA</span><span>9 ENDINGS</span></div>
-        <div class="button-row">
-          <button id="start-button" class="button primary">Begin mission</button>
-          <button id="how-button" class="button secondary">How to play</button>
-          <button id="educator-button" class="button ghost">For educators</button>
-        </div>
-        <p class="fine-print">Browser-playable. No account required. Archived data is always labelled honestly.</p>
+        <p class="tagline">Keep the station alive. Keep the crew together.</p>
+        <nav class="main-nav" aria-label="Main menu">
+          <button id="continue-button" class="menu-button primary-menu"><b>Continue</b><small id="continue-meta">No mission yet</small></button>
+          <button id="new-button" class="menu-button"><b>New Mission</b><small>Begin at Sol 01</small></button>
+          <button id="saves-button" class="menu-button"><b>Saved Games</b><small>Autosave + 6 mission slots</small></button>
+          <button id="menu-settings-button" class="menu-button compact">Settings</button>
+          <button id="how-button" class="menu-button compact">How to Play</button>
+          <button id="educator-button" class="menu-button compact">For Educators</button>
+          <button id="menu-data-button" class="menu-button compact">NASA Sources</button>
+        </nav>
+        <p class="fine-print">Real data is always labelled LIVE, CACHED, or ARCHIVED. Echo Station is fictional.</p>
       </article>
     </section>
 
     <section id="prologue-screen" class="screen prologue-screen" aria-label="Mission prologue">
-      <img src="assets/vn/cg/prologue-arrival.webp" class="full-bg" alt="Echo Station beneath a solar storm">
+      <img id="prologue-bg" src="assets/vn/cg/prologue-arrival.webp" class="full-bg prologue-bg" alt="Echo Station on Mars">
       <div class="prologue-scrim"></div>
       <article class="prologue-card">
-        <p id="prologue-kicker" class="eyebrow">MISSION RECORD • BEFORE SOL 01</p>
-        <h2 id="prologue-title">The station that must answer for itself</h2>
-        <p id="prologue-text"></p>
-        <div class="prologue-footer">
-          <span id="prologue-progress">1 / 4</span>
-          <button id="prologue-next" class="button primary">Continue</button>
-        </div>
+        <p id="prologue-kicker" class="eyebrow"></p><h2 id="prologue-title"></h2><p id="prologue-text"></p>
+        <div class="prologue-footer"><span id="prologue-progress"></span><button id="prologue-next" class="button primary">Continue</button></div>
       </article>
     </section>
 
     <section id="game-screen" class="screen game-screen" aria-label="Echo Station visual novel">
       <img id="location-bg" class="full-bg location-bg" src="assets/vn/cabin.webp" alt="Current Echo Station room">
-      <div class="stage-scrim"></div>
+      <div class="stage-scrim"></div><div id="danger-flash" class="danger-flash" aria-hidden="true"></div>
       <header id="hud" class="hud">
-        <div class="mission-clock">
-          <b class="brand-dot">TS</b>
-          <span><strong id="sol-label">SOL 01</strong><small id="time-label">08:00 • MORNING</small></span>
-        </div>
-        <div id="resource-strip" class="resource-strip" aria-label="Core mission resources"></div>
-        <nav class="quick-menu" aria-label="Visual novel controls">
-          <button id="back-button" class="quick-button" title="Rollback (PageUp)">↶ <span>BACK</span></button>
-          <button id="history-button" class="quick-button" title="Dialogue history (L)">▤ <span>LOG</span></button>
-          <button id="status-button" class="quick-button">◇ <span>STATUS</span></button>
-          <button id="crew-button" class="quick-button">♡ <span>CREW</span></button>
-          <button id="data-button" class="quick-button">● <span>NASA</span></button>
-          <button id="settings-button" class="quick-button">⚙ <span>SETTINGS</span></button>
-        </nav>
+        <div class="mission-clock"><b class="brand-dot">TS</b><span><strong id="sol-label">SOL 01</strong><small id="time-label">08:00 • MORNING</small></span></div>
+        <div id="resource-strip" class="resource-strip" aria-label="Core resources"></div>
       </header>
-
-      <div class="place-label">
-        <small id="phase-label">MORNING REPORT</small>
-        <strong id="location-label">COMMANDER CABIN</strong>
-      </div>
-
+      <div id="place-label" class="place-label"><small id="phase-label">FREE TIME</small><strong id="location-label">COMMANDER CABIN</strong></div>
+      <button id="mission-chip" class="mission-chip"><span>◎</span><b>TODAY</b><small id="mission-chip-text">3 blocks left</small></button>
+      <div id="objective-card" class="objective-card" hidden></div>
       <div id="exit-layer" class="exit-layer" aria-label="Room exits"></div>
       <div id="character-layer" class="character-layer" aria-label="Crew in this room"></div>
-      <div id="room-actions" class="room-actions" aria-label="Available activities"></div>
+      <div id="room-actions" class="room-actions" aria-label="Room task"></div>
+      <div id="decision-shade" class="decision-shade" hidden></div>
       <div id="decision-layer" class="decision-layer" hidden></div>
 
       <section id="dialogue-box" class="dialogue-box" aria-live="polite">
-        <div class="dialogue-top">
-          <span id="speaker-name">MISSION LOG</span>
-          <span id="slot-label">3 TIME BLOCKS LEFT</span>
-        </div>
+        <div class="dialogue-top"><span id="speaker-name">MISSION LOG</span><span id="slot-label">3 BLOCKS LEFT</span></div>
         <p id="dialogue-text">Welcome to Echo Station.</p>
         <div class="dialogue-bottom">
           <button id="source-button" class="source-button">WHY IS THIS REAL? ↗</button>
-          <button id="continue-hint" class="continue-hint">CLICK / SPACE TO CONTINUE <i>▸</i></button>
+          <button id="continue-hint" class="continue-hint">CLICK / SPACE <i>▸</i></button>
         </div>
+        <nav id="quick-menu" class="quick-menu" aria-label="Visual novel controls">
+          <button id="back-button" title="Rollback">↶ <span>Back</span></button><button id="history-button">▤ <span>Log</span></button><button id="auto-button">▶ <span>Auto</span></button><button id="skip-button">» <span>Skip</span></button><button id="quick-save-button">▣ <span>Save</span></button><button id="quick-load-button">▱ <span>Load</span></button><button id="status-button">◇ <span>Status</span></button><button id="crew-button">♡ <span>Crew</span></button><button id="game-menu-button">☰ <span>Menu</span></button>
+        </nav>
       </section>
     </section>
 
     <section id="ending-screen" class="screen ending-screen">
-      <img id="ending-bg" class="full-bg" src="assets/vn/endings/held-together.webp" alt="Mission ending">
-      <div class="ending-scrim"></div>
-      <article class="ending-card">
-        <p class="eyebrow">YOUR ECHO STATION ENDING</p>
-        <h2 id="ending-title">HELD TOGETHER</h2>
-        <p id="ending-summary"></p>
-        <div id="ending-stats" class="ending-stats"></div>
-        <div class="ending-columns">
-          <section><h3>Cause map</h3><div id="cause-map"></div></section>
-          <section><h3>Mission science report</h3><div id="science-report"></div></section>
-        </div>
-        <div class="button-row">
-          <button id="replay-button" class="button primary">Try another timeline</button>
-          <button id="checkpoint-button" class="button secondary">Load Sol 10 morning</button>
-        </div>
-      </article>
+      <img id="ending-bg" class="full-bg" src="assets/vn/endings/held-together.webp" alt="Mission ending"><div class="ending-scrim"></div>
+      <article class="ending-card"><p class="eyebrow">YOUR ECHO STATION ENDING</p><h2 id="ending-title"></h2><p id="ending-summary"></p><div id="ending-stats" class="ending-stats"></div><div class="ending-columns"><section><h3>Cause map</h3><div id="cause-map"></div></section><section><h3>Mission science report</h3><div id="science-report"></div></section></div><div class="button-row"><button id="replay-button" class="button primary">Try another timeline</button><button id="checkpoint-button" class="button secondary">Load Sol 10 morning</button></div></article>
     </section>
   </main>
 
-  <aside id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
-    <button id="drawer-close" class="drawer-close" aria-label="Close">×</button>
-    <p id="drawer-kicker" class="eyebrow">MISSION FILE</p>
-    <h2 id="drawer-title">STATUS</h2>
-    <div id="drawer-body" class="drawer-body"></div>
-  </aside>
-  <div id="drawer-shade" class="drawer-shade" hidden></div>
-
-  <section id="morning-report" class="morning-report" hidden>
-    <div class="report-card">
-      <p class="eyebrow">WAKE-UP BRIEFING</p>
-      <h2 id="report-title">Sol 01 begins</h2>
-      <div class="report-grid">
-        <article><span>YESTERDAY</span><p id="report-yesterday"></p></article>
-        <article><span>OVERNIGHT</span><p id="report-overnight"></p></article>
-        <article><span>TODAY</span><p id="report-today"></p></article>
-      </div>
-      <button id="report-continue" class="button primary">Start the day</button>
-    </div>
-  </section>
-
-  <section id="cutscene" class="cutscene" hidden>
-    <img id="cutscene-bg" class="full-bg" src="assets/vn/hub.webp" alt="Consequence scene">
-    <div class="cutscene-scrim"></div>
-    <article class="cutscene-card">
-      <p id="cutscene-kicker" class="eyebrow">CONSEQUENCE</p>
-      <h2 id="cutscene-title"></h2>
-      <p id="cutscene-text"></p>
-      <div id="effect-chips" class="effect-chips"></div>
-      <button id="cutscene-continue" class="button primary">Return to the station</button>
-    </article>
-  </section>
-
-  <div id="toast" class="toast" hidden></div>
-  <div id="tutorial-tip" class="tutorial-tip" hidden></div>
-
-  <script src="data.js"></script>
-  <script src="game.js"></script>
+  <section id="panel" class="panel" hidden aria-modal="true" role="dialog"><div class="panel-shell"><button id="panel-close" class="panel-close" aria-label="Close">×</button><p id="panel-kicker" class="eyebrow">MISSION FILE</p><h2 id="panel-title"></h2><div id="panel-body" class="panel-body"></div></div></section>
+  <section id="morning-report" class="morning-report" hidden><div class="report-card"><p class="eyebrow">WAKE-UP BRIEFING</p><h2 id="report-title"></h2><div class="report-grid"><article><span>YESTERDAY</span><p id="report-yesterday"></p></article><article><span>OVERNIGHT</span><p id="report-overnight"></p></article><article><span>TODAY</span><p id="report-today"></p></article></div><button id="report-continue" class="button primary">Enter the scene</button></div></section>
+  <section id="cutscene" class="cutscene" hidden><img id="cutscene-bg" class="full-bg" src="assets/vn/hub.webp" alt="Consequence scene"><div class="cutscene-light"></div><div class="cutscene-scrim"></div><article class="cutscene-card"><p id="cutscene-kicker" class="eyebrow">CONSEQUENCE</p><h2 id="cutscene-title"></h2><p id="cutscene-text"></p><div id="effect-chips" class="effect-chips"></div><button id="cutscene-continue" class="button primary">See the crew's reaction</button></article></section>
+  <section id="sleep-screen" class="sleep-screen" hidden aria-live="polite"><img id="sleep-bg" class="full-bg" src="assets/vn/v4/sleep-night.webp" alt="Commander cabin at night"><div class="sleep-scrim"></div><article class="sleep-card"><p id="sleep-kicker" class="eyebrow">LIGHTS DOWN</p><h2 id="sleep-title">The sol goes quiet.</h2><p id="sleep-text">You set the mission tablet aside.</p><div id="sleep-effects" class="sleep-effects"></div><button id="sleep-skip" class="button ghost">Continue</button></article></section>
+  <div id="toast" class="toast" hidden></div><div id="tutorial-tip" class="tutorial-tip" hidden></div>
+  <script src="data.js"></script><script src="v4-scenes.js"></script><script src="game.js"></script>
 </body>
 </html>
