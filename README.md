@@ -4,9 +4,14 @@
 
 ## Play
 
-- Live game: https://twin-sols-echo-council.foidhunter777333.chatgpt.site
+- Live game: https://twin-sols.vercel.app
 - No account or installation is required.
 - The interface and story are in English.
+
+## Pitch deck
+
+- [Public 7-slide demonstration (PDF)](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Twin-Sols-Echo-Council-Pitch.pdf)
+- [Editable PowerPoint file](https://github.com/dedmaxim4u-stack/twin-sols-echo-council/blob/main/docs/Twin-Sols-Echo-Council-Pitch.pptx)
 
 ## Core loop
 
