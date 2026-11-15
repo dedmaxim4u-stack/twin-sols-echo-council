@@ -39,3 +39,20 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .game-screen.scene-dialogue .source-button{opacity:0;pointer-events:none}
 @media(max-width:760px){.exit-hotspot .exit-label{display:none}.exit-hotspot:focus .exit-label,.exit-hotspot:active .exit-label{display:block}}
+
+/* v4.1 interaction polish */
+.mission-chip{left:auto;right:25px;top:88px}
+.objective-card{left:auto;right:25px;top:145px}
+.resource-pill{position:relative}
+.resource-route{margin-left:4px;color:var(--gold);font-size:.52rem;white-space:nowrap}
+.resource-pill:hover .resource-route,.resource-pill:focus-visible .resource-route{color:#fff}
+.room-actions{right:clamp(22px,4vw,72px);bottom:270px}
+.activity.work-action{position:relative;min-width:310px;min-height:68px;padding:15px 18px 12px;border:2px solid var(--gold);border-radius:18px;background:linear-gradient(135deg,#173a50f2,#0b192bef);box-shadow:0 12px 34px #0008,0 0 0 3px #f3b83f24}
+.activity.work-action::before{width:42px;height:42px;background:var(--gold);color:#102035;font-size:1.15rem}
+.activity.work-action::after{content:"ACTION • 1 BLOCK";position:absolute;right:14px;top:-13px;padding:5px 9px;border-radius:99px;background:var(--gold);color:#182234;font-size:.54rem;font-weight:950;letter-spacing:.08em;box-shadow:0 5px 14px #0005}
+.activity.work-action b{font-size:.9rem}.activity.work-action small{font-size:.68rem;line-height:1.35}
+.activity.work-action:hover,.activity.work-action:focus-visible{transform:translateY(-3px);background:linear-gradient(135deg,#1c5367,#10243b);box-shadow:0 16px 38px #0009,0 0 0 4px #f3b83f55}
+.activity.work-action:disabled::after{content:"DONE TODAY";background:#d9e9df;color:#285941}
+.game-screen.scene-council.scene-dialogue .character-layer{opacity:1;pointer-events:none}
+.game-screen.scene-council.scene-dialogue .character{pointer-events:none}
+@media(max-width:760px){.mission-chip{left:auto;right:9px;top:130px}.objective-card{left:auto;right:9px;top:182px}.room-actions{right:10px;bottom:246px}.activity.work-action{min-width:245px;max-width:275px;min-height:62px;padding:12px 14px}.resource-route{display:none}}
